@@ -1,0 +1,49 @@
+{
+  "name": "admin-panel",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "start": "env-cmd -f .env vite",
+    "start:production": "env-cmd -f .env.production vite",
+    "build": "env-cmd -f .env.production tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.10.5",
+    "@mantine/core": "^5.6.3",
+    "@mantine/dates": "^5.6.3",
+    "@mantine/form": "^5.6.3",
+    "@mantine/hooks": "^5.6.3",
+    "@mantine/notifications": "^5.6.3",
+    "@mantine/rte": "^5.6.3",
+    "@tabler/icons": "^1.109.0",
+    "@types/react-datepicker": "^4.8.0",
+    "axios": "^1.1.3",
+    "chart.js": "^3.9.1",
+    "dayjs": "^1.11.6",
+    "env-cmd": "^10.1.0",
+    "fecha": "^4.2.3",
+    "imagekitio-react": "^2.0.0",
+    "jspdf": "^2.5.1",
+    "mantine-datatable": "^1.7.13",
+    "primeicons": "^6.0.1",
+    "primereact": "^8.7.0",
+    "react": "^18.2.0",
+    "react-datepicker": "^4.8.0",
+    "react-dom": "^18.2.0",
+    "react-icons": "^4.6.0",
+    "react-query": "^3.39.2",
+    "react-router-dom": "^6.4.2",
+    "react-to-print": "^2.14.7",
+    "tabler-icons-react": "^1.55.0",
+    "zod": "^3.19.1",
+    "zustand": "^4.1.4"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.24",
+    "@types/react-dom": "^18.0.8",
+    "@vitejs/plugin-react": "^2.2.0",
+    "typescript": "^4.8.4",
+    "vite": "^3.2.2"
+  }
+}
