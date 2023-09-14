@@ -1,0 +1,7 @@
+RewriteEngine On
+RewriteBase /
+
+# Handle requests for URLs that don't match a file or directory
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ /index.html [L]
