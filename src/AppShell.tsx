@@ -115,6 +115,7 @@ export default function ApplicationShell() {
                     :
                     <Text>{user.user_code}</Text>
                   }
+                  {user.referral_payment_status === false ? '' :
                   <CopyButton value={user.user_code} timeout={2000}>
                     {({ copied, copy }) => (
                       <Tooltip
@@ -134,7 +135,7 @@ export default function ApplicationShell() {
                         </ActionIcon>
                       </Tooltip>
                     )}
-                  </CopyButton>
+                  </CopyButton>}
                 </Box>
               ) : null}
               <ActionIcon

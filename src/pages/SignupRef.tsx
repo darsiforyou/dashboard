@@ -112,9 +112,14 @@ export function SignupRef() {
     try {
       const res = await axios.post(url, values, options);
       const data = res.data;
-      if (res.status === 200) {
+      console.log("🚀 ~ file: SignupRef.tsx:115 ~ handleSubmit ~ data:", res)
+      if (res.status === 200 || res.status === 201) {
+        console.log(200)
         if (data.paymentToken)
           return window.location.replace(data.paymentToken);
+        else {
+          window.location.href = "/login";
+        }
       } else {
         showNotification({
           autoClose: 5000,
