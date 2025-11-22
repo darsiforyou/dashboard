@@ -128,15 +128,20 @@ export function Brands({}: Props) {
   const filterForm = useForm({
     initialValues: filterFormInit,
   });
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     const values = form.values;
-    setSubmitting(true);
-    const formData = getFormData(values);
 
-    // Append the new flag to FormData so backend can check it
-    // ensure string values are appended (FormData only accepts string/blob)
-    formData.append("applyToProducts", applyToProducts ? "true" : "false");
+    // Ensure applyToProducts is included in the values so getFormData will add it to FormData
+    // Backend expects "true"/"false" when multipart/form-data is used
+    // store as string because FormData serializes primitives
+    (values as any).applyToProducts = applyToProducts ? "true" : "false";
+
+    setSubmitting(true);
+
+    // create FormData from values (getFormData should handle nested values appropriately)
+    const formData = getFormData(values);
 
     const options = {
       headers: {
@@ -146,30 +151,42 @@ export function Brands({}: Props) {
     let res;
     let brandAddOrUpdateTitle = "";
 
-    if (values._id) {
-      res = await axiosConfig.put(BRANDS + "/" + values._id, formData, options);
-      brandAddOrUpdateTitle = "Brand updated";
-    } else {
-      res = await axiosConfig.post(BRANDS, formData, options);
-      brandAddOrUpdateTitle = "Brand Added";
-    }
+    try {
+      if (values._id) {
+        res = await axiosConfig.put(BRANDS + "/" + values._id, formData, options);
+        brandAddOrUpdateTitle = "Brand updated";
+      } else {
+        res = await axiosConfig.post(BRANDS, formData, options);
+        brandAddOrUpdateTitle = "Brand Added";
+      }
 
-    if (res?.status === 200) {
-      setIsAddModalOpened(false);
-      form.reset();
-      refetch();
-      setImage("");
-      // reset applyToProducts to default true after submit
-      setApplyToProducts(true);
+      if (res?.status === 200) {
+        setIsAddModalOpened(false);
+        form.reset();
+        refetch();
+        setImage("");
+        // reset applyToProducts to default true after submit
+        setApplyToProducts(true);
+        showNotification({
+          title: brandAddOrUpdateTitle,
+          message: res.data.message,
+          icon: <IconCheck />,
+          color: "teal",
+        });
+      }
+    } catch (err) {
+      // optionally show notification for error
       showNotification({
-        title: brandAddOrUpdateTitle,
-        message: res.data.message,
-        icon: <IconCheck />,
-        color: "teal",
+        title: "Request failed",
+        message: "Unable to save brand — check console/network for details.",
+        color: "red",
       });
+      console.error("Brand save error:", err);
+    } finally {
+      setSubmitting(false);
     }
-    setSubmitting(false);
   }
+
   const handleFilterForm = async (e: FormEvent) => {
     e.preventDefault();
     const values = filterForm.values;
@@ -519,4 +536,5 @@ export function Brands({}: Props) {
     </>
   );
 }
+
 
