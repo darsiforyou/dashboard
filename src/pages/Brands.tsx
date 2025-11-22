@@ -102,6 +102,8 @@ export function Brands({}: Props) {
   const { classes } = useStyles();
   const [isAddModalOpened, setIsAddModalOpened] = useState(false);
   const [image, setImage]: any = useState("");
+  // NEW: applyToProducts state (default true so admin can uncheck if not desired)
+  const [applyToProducts, setApplyToProducts] = useState<boolean>(true);
 
   const theme = useMantineTheme();
 
@@ -131,6 +133,11 @@ export function Brands({}: Props) {
     const values = form.values;
     setSubmitting(true);
     const formData = getFormData(values);
+
+    // Append the new flag to FormData so backend can check it
+    // ensure string values are appended (FormData only accepts string/blob)
+    formData.append("applyToProducts", applyToProducts ? "true" : "false");
+
     const options = {
       headers: {
         "Content-Type": "multipart/form-data",
@@ -152,6 +159,8 @@ export function Brands({}: Props) {
       form.reset();
       refetch();
       setImage("");
+      // reset applyToProducts to default true after submit
+      setApplyToProducts(true);
       showNotification({
         title: brandAddOrUpdateTitle,
         message: res.data.message,
@@ -175,6 +184,11 @@ export function Brands({}: Props) {
     setIsAddModalOpened(true);
     if (data._id) {
       form.setValues(data);
+      // keep applyToProducts default true when editing; admin can choose before submit
+      setApplyToProducts(true);
+    } else {
+      form.reset();
+      setApplyToProducts(true);
     }
   };
   const handleDelete = async (id: string) => {
@@ -257,58 +271,6 @@ export function Brands({}: Props) {
           Add Brand
         </Button>
       </div>
-      {/* <DataTable
-        value={brands?.data?.docs}
-        dataKey="id"
-        onPage={onPagination}
-        totalRecords={brands?.data?.totalDocs}
-        loading={isLoading}
-        lazy
-        header={renderHeader}
-        responsiveLayout="scroll"
-        paginator
-        paginatorTemplate="CurrentPageReport FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown"
-        currentPageReportTemplate="Showing {first} to {last} of {totalRecords}"
-        rows={filters.limit}
-        rowsPerPageOptions={[10, 20, 50]}
-        emptyMessage="No Brand found."
-      >
-        <Column field="title" header="Title"></Column>
-        <Column
-          field="imageURL"
-          header="Image"
-          body={({ imageURL, title }) => (
-            <Image
-              width={100}
-              height={100}
-              src={imageURL}
-              alt={title}
-              withPlaceholder
-            />
-          )}
-        ></Column>
-        <Column
-          field="isActive"
-          header="Is Active"
-          body={({ isActive }) => <span>{isActive ? "Yes" : "No"}</span>}
-        ></Column>
-        <Column
-          field="isFeatured"
-          header="Is Featured"
-          body={({ isFeatured }) => <span>{isFeatured ? "Yes" : "No"}</span>}
-        ></Column>
-        <Column
-          headerStyle={{ width: "4rem", textAlign: "center" }}
-          bodyStyle={{
-            textAlign: "center",
-            overflow: "visible",
-            display: "flex",
-            justifyContent: "space-between",
-          }}
-          header="Action"
-          body={actionBodyTemplate}
-        />
-      </DataTable> */}
       <div
         style={{
           display: "flex",
@@ -423,8 +385,8 @@ export function Brands({}: Props) {
         onClose={() => {
           setIsAddModalOpened(false);
           setImage("");
-
           form.reset();
+          setApplyToProducts(true);
         }}
         title={form.values._id ? "Update Brand Details" : "Add Brand Details"}
         size="lg"
@@ -461,7 +423,8 @@ export function Brands({}: Props) {
             />
           </label>
 
-          <SimpleGrid mt={"xs"} cols={2}>
+          {/* Changed cols to 3 to accomodate new checkbox */}
+          <SimpleGrid mt={"xs"} cols={3}>
             <Checkbox
               label="is Feature"
               {...form.getInputProps("isFeatured", { type: "checkbox" })}
@@ -469,6 +432,12 @@ export function Brands({}: Props) {
             <Checkbox
               label="is Active"
               {...form.getInputProps("isActive", { type: "checkbox" })}
+            />
+            {/* NEW: Apply to all related products checkbox */}
+            <Checkbox
+              label="Apply to all related products (set all products active/inactive)"
+              checked={applyToProducts}
+              onChange={(e) => setApplyToProducts(e.currentTarget.checked)}
             />
           </SimpleGrid>
 
@@ -550,3 +519,4 @@ export function Brands({}: Props) {
     </>
   );
 }
+
