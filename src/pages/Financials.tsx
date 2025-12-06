@@ -149,14 +149,8 @@ const pendingAmount = pendingRequests
 
 
 ///all calculations after button
-  const minHold = 10; // Company holds 10 Rs
-  const netWallet = revenue?.walletAmount - pendingAmount;
-      const maxWithdraw = netWallet - minHold; // max withdrawable
-      const minWithdraw = 0.01; // Minimum amount must be greater than 0
-      const canWithdraw = maxWithdraw > minWithdraw; // true if user can withdraw
+  
 
-      const isAmountValid =
-      requestAmount > minWithdraw && requestAmount <= maxWithdraw;
 
 
 
@@ -210,6 +204,12 @@ useEffect(() => {
       setRequestAmount(WalletData.walletAmount);
     }
   }, [WalletData]);
+
+
+
+ 
+
+
 
   /** ----------------------- PAYABLE QUERY ------------------------ **/
   const {
@@ -267,6 +267,15 @@ useEffect(() => {
       return res.data;
     },
   });
+  const minHold = wallets?.data[0].minAmount; // Company holds 10 Rs
+
+   const netWallet = revenue?.walletAmount - pendingAmount;
+      const maxWithdraw = netWallet - minHold; // max withdrawable
+      const minWithdraw = 0.01; // Minimum amount must be greater than 0
+      const canWithdraw = maxWithdraw > minWithdraw; // true if user can withdraw
+
+      const isAmountValid =
+      requestAmount > minWithdraw && requestAmount <= maxWithdraw;
 
   const [tabChanged, toggle] = useToggle([true, false]);
   const [searchParams] = useSearchParams();
