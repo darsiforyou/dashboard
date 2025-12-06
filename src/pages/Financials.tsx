@@ -5,7 +5,6 @@ import {
   Tabs,
   Modal,
   NumberInput,
-  Divider,
   Box,
   Text,
   Select,
@@ -18,16 +17,13 @@ import { AxiosResponse } from "axios";
 import { useEffect, useState } from "react";
 import { useQuery } from "react-query";
 import { useSearchParams } from "react-router-dom";
-import { Filter, PigMoney } from "tabler-icons-react";
 import { FinancialList } from "../components/FinancialList";
 import { FinancialListRequest } from "../components/FinancialListRequests";
 import axiosConfig from "../configs/axios";
 import { BankAccount } from "../Types/types";
 import { ACCOUNTS, FINANCIALS } from "../utils/API_CONSTANT";
 
-type Props = {};
-
-const useStyles = createStyles((theme) => ({
+const useStyles = createStyles(() => ({
   header: {
     display: "flex",
     alignItems: "center",
@@ -35,6 +31,9 @@ const useStyles = createStyles((theme) => ({
     width: "100%",
   },
 }));
+
+//FetchBankAccount 
+/**********************Fetch Bank Accounts Start*************************************** */
 
 const fetchUserBankAccounts = async ({ queryKey }: any) => {
   const [_, { search, page, limit, user, ...filters }] = queryKey;
@@ -47,198 +46,269 @@ const fetchUserBankAccounts = async ({ queryKey }: any) => {
       : `${ACCOUNTS}/?search=${search}&page=${page}&limit=${limit}&${params}`;
 
   const res: AxiosResponse = await axiosConfig.get(url);
-  const data = res.data;
-  return data;
+  return res.data;
 };
 
-export function Financials({}: Props) {
+/*****************************Fetch bank Accounts End*********************************** */
+
+
+
+
+export function Financials() {
   const [requestAmount, setRequestAmount] = useState(0);
   const [paymentModal, setPaymentModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [revenue, setRevenue]: any = useState({});
+
+  const [revenue, setRevenue] = useState<any>({});
+
+
+
+
+
+  const [account, setAccount] = useState<string | null>(null);
+  const [accounts, setAccounts] = useState([]);
+
   const { classes } = useStyles();
+
   const user = JSON.parse(sessionStorage.getItem("user") || "{}");
-  // useEffect(() => {
-  //   getTotalAmount();
-  // }, []);
+
   const [filters, setfilters] = useState({
     search: "",
     limit: 10,
     page: 1,
-    user: user.role === "Vendor" || "Referrer" ? user._id : "",
+    user:
+      user.role === "Vendor" || user.role === "Referrer" ? user._id : "",
     type: "",
     bankName: "",
     account_number: "",
     iban: "",
   });
-  const {
-    isLoading,
-    error,
-    data: userAccounts,
-    refetch,
-  } = useQuery(["userAccounts", filters], fetchUserBankAccounts, {
-    enabled: true,
-    refetchOnWindowFocus: true,
-  });
-  const [accounts, setAccounts] = useState([]);
-  const [account, setAccount] = useState<string | null>(null);
+
+  /** ----------------------- USER ACCOUNTS QUERY ------------------------ **/
+  const { data: userAccounts } = useQuery(
+    ["userAccounts", filters],
+    fetchUserBankAccounts,
+    { refetchOnWindowFocus: true }
+  );
 
   useEffect(() => {
-    if (isLoading) return;
-
     if (userAccounts) {
-      const accounts = userAccounts.data.docs.map((account: BankAccount) => ({
+      const acc = userAccounts.data.docs.map((account: BankAccount) => ({
         ...account,
         value: account._id,
         label: account.title,
       }));
-      setAccounts(accounts);
+      setAccounts(acc);
     }
   }, [userAccounts]);
 
-  // const getTotalAmount = async () => {
-  //   let fields = {
-  //     darsi: user.role === "Admin" ? "true" : "false",
-  //   };
-  //   const params = new URLSearchParams(fields);
-  //   await axiosConfig
-  //     .get(`${FINANCIALS}/get-revenue-total/${user._id}?${params}`)
-  //     .then((res) => {
-  //       return res.data;
-  //     })
-  //     .then((response) => {
-  //       let data = response.data;
-  //       setRevenue(data);
-  //       setRequestAmount(data.walletAmount);
-  //     });
-  // };
+
+/** ----------------------- PENDING REQUESTS QUERY ------------------------ **/
+const {
+  data: pendingRequests,
+  refetch: refetchPending,
+} = useQuery(["pendingRequests", user._id], async () => {
+  const res = await axiosConfig.get(`${FINANCIALS}/requests/?user=${user._id}&page=1&limit=100`);
+  return res.data.data.docs;
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/***************************Pending Reqeust End*************************************************** */
+
+
+
+
+
+
+
+/**********************Pending Request functions start************************************************ */
+
+
+const pendingAmount = pendingRequests
+  ?.filter((r: any) => r.status === "Pending")
+  ?.reduce((sum: number, r: any) => sum + (r.amountRequested || 0), 0) || 0;
+
+
+/****************************pending function variable end***************************************** */
+
+
+
+
+///all calculations after button
+  const minHold = 10; // Company holds 10 Rs
+  const netWallet = revenue?.walletAmount - pendingAmount;
+      const maxWithdraw = netWallet - minHold; // max withdrawable
+      const minWithdraw = 0.01; // Minimum amount must be greater than 0
+      const canWithdraw = maxWithdraw > minWithdraw; // true if user can withdraw
+
+      const isAmountValid =
+      requestAmount > minWithdraw && requestAmount <= maxWithdraw;
+
+
+
+
+
+/**********************Rejected calc function******************************/
+
+const rejectedAmount = pendingRequests
+  ?.filter((r: any) => r.status === "Rejected")
+  ?.reduce((sum: number, r: any) => sum + (r.amountRequested || 0), 0) || 0;
+
+
+
+/*********************************Rejected Calc function end******************* */
+
+
+
+useEffect(() => {
+  if (paymentModal) {
+    setRequestAmount(revenue?.walletAmount - pendingAmount);
+  }
+}, [paymentModal, revenue, pendingAmount]);
+
+
+
+
+
+  /** ----------------------- WALLET QUERY ------------------------ **/
   const {
     data: WalletData,
-    isLoading: isLoadingWallet,
     refetch: refetchWallet,
   } = useQuery(
-    ["wallet"],
+    ["wallet", user._id],
     async () => {
-      let fields = {
+      const params = new URLSearchParams({
         darsi: user.role === "Admin" ? "true" : "false",
-      };
-      const params = new URLSearchParams(fields);
+      });
+
       const res = await axiosConfig.get(
         `${FINANCIALS}/get-revenue-total/${user._id}?${params}`
       );
-      const data = res.data.data;
-      return data;
-    },
-    {
-      enabled: true,
-      refetchOnWindowFocus: true,
-    }
-  );
 
-  const {
-    data: payable,
-    isLoading: payableLoading,
-    refetch: refetchPayable,
-  } = useQuery(
-    ["payable"],
-    async () => {
-      const res = await axiosConfig.get(`${FINANCIALS}/payable/${user._id}`);
-      const data = res.data.data;
-      return data;
+      return res.data.data;
     },
-    {
-      refetchOnWindowFocus: true,
-    }
+    { refetchOnWindowFocus: true }
   );
 
   useEffect(() => {
-    if (isLoadingWallet) return;
     if (WalletData) {
       setRevenue(WalletData);
       setRequestAmount(WalletData.walletAmount);
     }
-  }, [isLoadingWallet]);
+  }, [WalletData]);
+
+  /** ----------------------- PAYABLE QUERY ------------------------ **/
+  const {
+    data: payable,
+    isLoading: payableLoading,
+    refetch: refetchPayable,
+  } = useQuery(["payable", user._id], async () => {
+    const res = await axiosConfig.get(`${FINANCIALS}/payable/${user._id}`);
+    return res.data.data;
+  });
+
+  /** REFRESH WALLET WHEN LIST CHANGES (page, limit, search, etc.) **/
+  useEffect(() => {
+    refetchWallet();
+    refetchPayable();
+    refetchPending();
+
+  }, [filters]);
+
+  /** ----------------------- PAYMENT SUBMISSION ------------------------ **/
   async function handleSubmitMakePayment() {
     setSubmitting(true);
-    let res = await axiosConfig.post(FINANCIALS + "/make-payment-request", {
+
+    const res = await axiosConfig.post(FINANCIALS + "/make-payment-request", {
       user: user._id,
       darsi: user.role === "Admin" ? true : false,
       amount: requestAmount,
       accountId: account,
     });
 
-    if (res?.status === 200) {
-      // await getTotalAmount();
+    if (res.status === 200) {
+      await refetchWallet();
+      await refetchPayable();
+      await refetchPending();
+
+
       setPaymentModal(false);
+
       showNotification({
         title: "Success",
         message: res.data.message,
         icon: <IconCheck />,
         color: "teal",
       });
-    } else {
-      showNotification({
-        title: "Failed",
-        message: res.data.message,
-        icon: <IconCheck />,
-        color: "red",
-      });
     }
+
     setSubmitting(false);
   }
-  useEffect(() => {
-    refetchWallet();
-  }, [submitting]);
-  const { data: wallets, isFetching } = useQuery({
+
+  /** ----------------------- WALLET LIMIT QUERY ------------------------ **/
+  const { data: wallets } = useQuery({
     queryKey: ["wallets"],
     queryFn: async () => {
       const res = await axiosConfig.get("/wallets");
-      const data = await res.data;
-      return data;
+      return res.data;
     },
   });
-  const [tabChanged, toggle] = useToggle([true, false]);
-  let [searchParams, setSearchParams] = useSearchParams();
-  let params: Record<string, string | null> = {};
 
-  for (let [key, value] of searchParams.entries()) {
-    params[key] = value;
-  }
-  // console.log(revenue.walletAmount.toFixed(2))
+  const [tabChanged, toggle] = useToggle([true, false]);
+  const [searchParams] = useSearchParams();
+
   return (
     <>
       <div className={classes.header}>
         <Title>Financial</Title>
       </div>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "end",
-          marginBottom: "16px",
-        }}
-      >
-        <div>
-          {user.role !== "Admin" && (
-            <Button
-              size={"sm"}
-              leftIcon={<IconMoneybag size={16} />}
-              sx={{ marginRight: 10 }}
-              onClick={() => setPaymentModal(true)}
-              disabled={!revenue.walletAmount}
-            >
-              Make a request
-            </Button>
-          )}
-        </div>
+
+      {/* BUTTON */}
+      <div style={{ display: "flex", justifyContent: "end", marginBottom: "16px" }}>
+        {user.role !== "Admin" && (
+          <Button
+            size="sm"
+            leftIcon={<IconMoneybag size={16} />}
+            onClick={() => setPaymentModal(true)}
+            disabled={!revenue.walletAmount}
+          >
+            Make a request
+          </Button>
+        )}
       </div>
+
+      {/* SUMMARY BOX */}
       <Box sx={{ display: "flex", gap: "20px" }}>
-        <Text>Wallet: {revenue?.walletAmount?.toFixed(2) ?? 0}</Text>
-        <Text>Withdraw: {revenue.withdraw}</Text>
+        <Text>Wallet: {revenue?.walletAmount?.toFixed(2) ?? "0.00"}</Text>
+        <Text>Withdraw: {revenue?.withdraw ?? 0}</Text>
         <Text>Payable: {!payableLoading && payable?.data?.payable}</Text>
+         <Text>Pending: {pendingAmount.toFixed(2) ?? "0.00" } </Text>
+         <Text>Rejected: {rejectedAmount.toFixed(2) ?? "0.00"} </Text>
+         <Text>Net Wallet: {revenue?.walletAmount-pendingAmount} </Text>
+         {/* <Text>Net Wallet2: {(revenue?.walletAmount-pendingAmount)+rejectedAmount} </Text> */}
+
       </Box>
+
+      {/* TABS */}
       <Tabs
         defaultValue={
-          params.activeTab ? "Payment Requests" : "Financial Entries"
+          searchParams.get("activeTab")
+            ? "Payment Requests"
+            : "Financial Entries"
         }
         onTabChange={() => toggle()}
       >
@@ -246,64 +316,106 @@ export function Financials({}: Props) {
           <Tabs.Tab value="Financial Entries">Financial Entries</Tabs.Tab>
           <Tabs.Tab value="Payment Requests">Payment Requests</Tabs.Tab>
         </Tabs.List>
+
         <Tabs.Panel value="Financial Entries" pt="xs">
           <FinancialList paymentRequest={submitting} tabChange={tabChanged} />
         </Tabs.Panel>
+
         <Tabs.Panel value="Payment Requests" pt="xs">
           <FinancialListRequest
             paymentRequest={submitting}
             tabChange={tabChanged}
-            activeTab={params.activeTab || "All"}
+            activeTab={searchParams.get("activeTab") || "All"}
           />
         </Tabs.Panel>
       </Tabs>
-      <Modal
-        opened={paymentModal}
-        onClose={() => setPaymentModal(false)}
-        size={600}
-        withCloseButton={true}
-        title="Make a new payment request"
-      >
-        <Box component="div">
-          <Text>Available Balance: {revenue.walletAmount}</Text>
-        </Box>
-        {revenue.walletAmount >= wallets?.data[0].minAmount ?? 5000 ? (
-          <Box component="div">
-            <NumberInput
-              label="Amount"
-              mb={12}
-              value={requestAmount}
-              onChange={(e: number) => setRequestAmount(e)}
-            />
-            <Select
-              placeholder="Select your account..."
-              required
-              data={accounts}
-              value={account}
-              onChange={setAccount}
-            />
-            <Button
-              sx={{ width: "100%" }}
-              color="teal"
-              onClick={handleSubmitMakePayment}
+
+      {/* PAYMENT MODAL */}
+  <Modal
+  opened={paymentModal}
+  onClose={() => setPaymentModal(false)}
+  size={600}
+  title="Make a new payment request"
+>
+  <Box>
+    <Text>Available Balance: {revenue?.walletAmount - pendingAmount}</Text>
+   
+
+      <Alert
+              icon={<IconInfoCircle size={16} />}
+              
+              color="red"
               my="sm"
-              disabled={requestAmount > revenue.walletAmount}
             >
-              Confirm
-            </Button>
-          </Box>
-        ) : (
-          <Alert
-            icon={<IconInfoCircle size={16} />}
-            title="Insufficient Amount"
-            my={"sm"}
+              You must keep a minimum balance of {minHold} Rs.
+            </Alert>
+    
+  </Box>
+
+  <Box>
+    {(() => {
+    
+
+      return (
+        <>
+          <NumberInput
+            label="Amount"
+            mb={12}
+            value={requestAmount || (canWithdraw ? minWithdraw : 0)}
+            onChange={(value) => setRequestAmount(Number(value) || 0)}
+            min={minWithdraw}
+            max={maxWithdraw}
+            disabled={!canWithdraw}
+          />
+
+          <Select
+            placeholder="Select your account..."
+            required
+            data={accounts}
+            value={account}
+            onChange={setAccount}
+            disabled={!canWithdraw}
+          />
+
+          <Button
+            fullWidth
+            color="teal"
+            onClick={handleSubmitMakePayment}
+            disabled={submitting || !isAmountValid || !canWithdraw}
           >
-            Dear User, Your wallet amount is less than{" "}
-            {wallets?.data[0].minAmount ?? 5000} you cannot create a Payment
-            request for amount less then {wallets?.data[0].minAmount ?? 5000}.
-          </Alert>
-        )}
-      </Modal>
+            {submitting ? "Processing..." : "Confirm"}
+          </Button>
+
+          {!canWithdraw && (
+            <Alert
+              icon={<IconInfoCircle size={16} />}
+              title="Insufficient Balance"
+              color="red"
+              my="sm"
+            >
+              You must keep a minimum balance of {minHold} Rs. Cannot withdraw.
+            </Alert>
+          )}
+
+          {requestAmount <= 0 && canWithdraw && (
+            <Alert
+              icon={<IconInfoCircle size={16} />}
+              title="Invalid Amount"
+              color="red"
+              my="sm"
+            >
+              Withdrawable amount must be greater than 0.
+            </Alert>
+          )}
+        </>
+      );
+    })()}
+  </Box>
+</Modal>
+
+
+
+
     </>
   );
 }
