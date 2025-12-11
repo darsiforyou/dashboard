@@ -53,7 +53,7 @@ const schema = z.object({
   email: z.string(),
   firstname: z.number(),
   lastname: z.number(),
-  password: z.boolean(),
+  // password: z.boolean(),
   role: z.boolean(),
   referred_by: z.number(),
   referral_package: z.string(),
@@ -150,7 +150,7 @@ export function Users({}: Props) {
       email: "",
       firstname: "",
       lastname: "",
-      password: "",
+      // password: "",
       role: "",
       referred_by: "",
       referral_package: "",
@@ -496,13 +496,13 @@ export function Users({}: Props) {
               required
               {...form.getInputProps("email")}
             />
-            <TextInput
+            {/* <TextInput
               label="Password"
               placeholder="Password"
               type="password"
               required={form.values._id ? false : true}
               {...form.getInputProps("password")}
-            />
+            /> */}
           </SimpleGrid>
           <Select
             label="User Role"
