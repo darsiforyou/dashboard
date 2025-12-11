@@ -496,13 +496,13 @@ export function Users({}: Props) {
               required
               {...form.getInputProps("email")}
             />
-            {/* <TextInput
+           <TextInput
               label="Password"
               placeholder="Password"
               type="password"
-              required={form.values._id ? false : true}
+              required={form.values._id ? true : true}
               {...form.getInputProps("password")}
-            /> */}
+            /> 
           </SimpleGrid>
           <Select
             label="User Role"
