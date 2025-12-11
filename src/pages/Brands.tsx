@@ -440,23 +440,67 @@ export function Brands({}: Props) {
             />
           </label>
 
+
+
+
+
+         {/* //condition apply vendor and admin */}
+
+
           {/* Changed cols to 3 to accomodate new checkbox */}
-          <SimpleGrid mt={"xs"} cols={3}>
-            <Checkbox
-              label="is Feature"
-              {...form.getInputProps("isFeatured", { type: "checkbox" })}
-            />
-            <Checkbox
-              label="is Active"
-              {...form.getInputProps("isActive", { type: "checkbox" })}
-            />
-            {/* NEW: Apply to all related products checkbox */}
-            <Checkbox
-              label="Apply to all related products (set all products active/inactive)"
-              checked={applyToProducts}
-              onChange={(e) => setApplyToProducts(e.currentTarget.checked)}
-            />
-          </SimpleGrid>
+
+
+  
+
+          <SimpleGrid
+  mt="xs"
+  cols={3}
+  breakpoints={[
+    { maxWidth: "md", cols: 2 },
+    { maxWidth: "sm", cols: 1 },
+  ]}
+>
+
+  {user.role !== "Vendor" && (
+  <Checkbox
+    label="is Feature"
+    {...form.getInputProps("isFeatured", { type: "checkbox" })}
+  />
+
+  )}
+
+    {user.role !== "Vendor" && (
+
+  <Checkbox
+    label="is Active"
+    {...form.getInputProps("isActive", { type: "checkbox" })}
+  />
+
+   )}
+
+  {/* Show only if NOT Vendor */}
+  {user.role !== "Vendor" && (
+    <Checkbox
+      label="Apply to all related products (set all products active/inactive)"
+      checked={applyToProducts}
+      onChange={(e) => setApplyToProducts(e.currentTarget.checked)}
+    />
+  )}
+</SimpleGrid>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
           <Button loading={submitting} type="submit" fullWidth my={"sm"}>
             Submit
