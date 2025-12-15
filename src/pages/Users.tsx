@@ -2,6 +2,7 @@ import {
   Button,
   createStyles,
   Modal,
+  Image,
   TextInput,
   Title,
   SimpleGrid,
@@ -34,6 +35,7 @@ import {
   Search,
   Filter,
   Edit,
+  Anchor,
 } from "tabler-icons-react";
 import { showNotification } from "@mantine/notifications";
 import { IconCheck } from "@tabler/icons";
@@ -392,6 +394,62 @@ export function Users({}: Props) {
                 </>
               ),
             },
+
+
+
+              
+//   {
+//   accessor: "imageURL",
+//   title: "Profile Image",
+//   width: 100,
+//   cellsStyle: {
+//     height: 100,
+//     margin: "auto 0",
+//   },
+//   render: ({paymentScreenshotId,paymentScreenshotURL}: User) => (
+//     <Image
+//       width="100%"
+//       height={100}
+//       src={paymentScreenshotURL ? paymentScreenshotURL : paymentScreenshotId}
+      
+//       withPlaceholder
+//     />
+//   ),
+// },
+
+    
+{
+  accessor: "imageURL",
+  title: "Profile Image",
+  width: 100,
+  cellsStyle: {
+    height: 100,
+    margin: "auto 0",
+  },
+  render: ({ imageURL, paymentScreenshotURL, firstname, lastname }: any) => (
+    <a 
+      href={imageURL || paymentScreenshotURL} 
+      target="_blank" 
+      rel="noopener noreferrer"
+    >
+      <Image
+        width="100%"
+        height={100}
+        src={imageURL || paymentScreenshotURL} // agar profile image nahi hai to payment screenshot show
+        alt={`${firstname} ${lastname}`}
+        withPlaceholder
+      />
+    </a>
+  ),
+},
+
+  
+           
+
+
+
+
+
             {
               accessor: "email",
             },
@@ -418,6 +476,9 @@ export function Users({}: Props) {
             },
             {
               accessor: "commission",
+            },
+            {
+              accessor: "transaction_id",
             },
             {
               accessor: "referral_payment_status",
@@ -538,6 +599,11 @@ export function Users({}: Props) {
                 placeholder="Referred by"
                 {...form.getInputProps("referred_by")}
               />
+
+
+
+
+              
               <Select
                   label="Referral Payment Status"
                   mt={"xs"}
