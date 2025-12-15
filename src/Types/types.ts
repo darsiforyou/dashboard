@@ -353,12 +353,15 @@ export interface User {
   lastname: string;
   orderCount: number;
   password: string;
+  paymentScreenshotId:any;
+  paymentScreenshotURL:any;
   referral_package?: string;
   packageName: Package[];
   referred_by: ReferredBy;
   refreshToken?: string;
   role: Role;
   referral_payment_status: boolean;
+  transaction_id:String
   totalSale: number;
   totalVendorProductSold: number;
   updatedAt: Date;
