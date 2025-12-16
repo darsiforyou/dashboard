@@ -133,11 +133,11 @@ export default function ApplicationShell() {
 
   // Company bank details
   const companyBank = {
-    name: "Darsi Pvt Ltd",
-    accountNumber: "1234567890",
-    bankName: "National Bank",
-    branch: "Main Branch",
-    ifsc: "NATB0001234",
+    name: "Acme Educational Publications PVT Ltd",
+    IBN: "PK41MEZN0001880111226573",
+    bankName: "Meezan Bank",
+    accounttitle: "Acme Educational Publications Pvt. Ltd.",
+    accountnumber: "01880111226573",
   };
 
   return (
@@ -230,15 +230,15 @@ export default function ApplicationShell() {
             <Text><b>Role:</b> {user.role}</Text>
             {user.role === "Referrer" && <Text><b>Referral Code:</b> {user.user_code}</Text>}
             {user.role === "Referrer" && <Text><b>Package:</b> {!isFetching ? refPackage?.title : "Loading"}</Text>}
-            {user.role === "Referrer" && <Text><b>Amount:</b> {!isFetching ? refPackage?.price : "Loading"}</Text>}
+            {user.role === "Referrer" && <Text><b>Amount:Rs </b> {!isFetching ? refPackage?.price : "Loading"}</Text>}
           </Card>
 
           <Card shadow="sm" radius="md" withBorder>
             <Title order={6}>Company Bank Details</Title>
             <Text><b>Bank Name:</b> {companyBank.bankName}</Text>
-            <Text><b>Branch:</b> {companyBank.branch}</Text>
-            <Text><b>Account Number:</b> {companyBank.accountNumber}</Text>
-            <Text><b>IFSC:</b> {companyBank.ifsc}</Text>
+            <Text><b>Account Title:</b> {companyBank.accounttitle}</Text>
+            <Text><b>IBAN:</b> {companyBank.IBN}</Text>
+            <Text><b>Account Number:</b> {companyBank.accountnumber}</Text>
           </Card>
 
           <Divider />
