@@ -228,7 +228,6 @@ export default function ApplicationShell() {
             <Text><b>Name:</b> {user.firstname} {user.lastname}</Text>
             <Text><b>Email:</b> {user.email}</Text>
             <Text><b>Role:</b> {user.role}</Text>
-            {user.role === "Referrer" && <Text><b>Referral Code:</b> {user.user_code}</Text>}
             {user.role === "Referrer" && <Text><b>Package:</b> {!isFetching ? refPackage?.title : "Loading"}</Text>}
             {user.role === "Referrer" && <Text><b>Amount:Rs </b> {!isFetching ? refPackage?.price : "Loading"}</Text>}
           </Card>

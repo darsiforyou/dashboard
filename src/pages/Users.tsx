@@ -170,8 +170,20 @@ export function Users({}: Props) {
     initialValues: filterFormInit,
   });
   async function handleSubmit(e: FormEvent) {
+   
     e.preventDefault();
     const values = form.values;
+
+
+    if (values.role === "Customer") {
+  values.referral_package = undefined as any;
+}
+
+
+    
+
+
+
     setSubmitting(true);
     let res;
     let userAddOrUpdateTitle = "";
