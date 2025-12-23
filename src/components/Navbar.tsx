@@ -176,12 +176,19 @@ const data = [
     icon: ShoppingCart,
     permision: ["Admin", "Referrer", "Vendor"],
   },
+    {
+    link: "/Bank-detail",
+    label: "Bank Detail",
+    icon: Settings,
+    permision: ["Admin"],
+  },
   {
     link: "/dashboard-settings",
     label: "Dashboard settings",
     icon: Settings,
     permision: ["Admin"],
   },
+
 ];
 
 interface Props {

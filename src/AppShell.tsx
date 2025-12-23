@@ -44,7 +44,7 @@ export default function ApplicationShell() {
     setOpened(false); // Close navigation on route change
   }, [pathname]);
 
-  const { colorScheme, toggleColorScheme } = useMantineColorScheme();
+  const { colorScheme } = useMantineColorScheme();
   const dark = colorScheme === "dark";
 
   const user = JSON.parse(sessionStorage.getItem("user") || "{}");
@@ -58,9 +58,19 @@ export default function ApplicationShell() {
     refetchOnWindowFocus: false,
   });
 
+  // 🔹 Fetch company bank details dynamically
+  const { data: companyBank, isLoading: isBankLoading } = useQuery({
+    queryKey: ["companyBank"],
+    queryFn: async () => {
+      const res = await axiosConfig.get("/bank-details");
+      return res.data?.data;
+    },
+    refetchOnWindowFocus: false,
+  });
+
   // Modal & payment state
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [transactionId, setTransactionId] = useState(""); // Transaction ID input
+  const [transactionId, setTransactionId] = useState("");
   const [paymentScreenshot, setPaymentScreenshot] = useState<File | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
@@ -93,16 +103,13 @@ export default function ApplicationShell() {
         throw new Error("Please upload payment screenshot.");
       }
 
+      const formData = new FormData();
+      formData.append("transaction_id", transactionId);
+      formData.append("paymentScreenshot", paymentScreenshot);
 
-   const formData = new FormData();
-   formData.append("transaction_id", transactionId);
-   formData.append("paymentScreenshot", paymentScreenshot);
-
-   const res = await axiosConfig.put(
-  USERS + "/" + user._id,
-  formData,
-  { headers: { "Content-Type": "multipart/form-data" } }
-);
+      const res = await axiosConfig.put(USERS + "/" + user._id, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
 
       return res.data;
     },
@@ -131,21 +138,10 @@ export default function ApplicationShell() {
 
   const handleUnpaidClick = () => setIsPaymentModalOpen(true);
 
-  // Company bank details
-  const companyBank = {
-    name: "Acme Educational Publications PVT Ltd",
-    IBN: "PK41MEZN0001880111226573",
-    bankName: "Meezan Bank",
-    accounttitle: "Acme Educational Publications Pvt. Ltd.",
-    accountnumber: "01880111226573",
-  };
-
   return (
     <AppShell
       styles={{
-        main: {
-          background: dark ? theme.colors.dark[8] : theme.colors.gray[0],
-        },
+        main: { background: dark ? theme.colors.dark[8] : theme.colors.gray[0] },
       }}
       navbarOffsetBreakpoint="sm"
       asideOffsetBreakpoint="sm"
@@ -191,10 +187,6 @@ export default function ApplicationShell() {
                 </Box>
               )}
 
-              {/* <ActionIcon variant="outline" color={dark ? "yellow" : "blue"} onClick={toggleColorScheme} mr="xs">
-                {dark ? <Sun size={18} /> : <MoonStars size={18} />}
-              </ActionIcon> */}
-
               <Menu>
                 <Menu.Target>
                   <Box sx={{ display: "flex", alignItems: "center", cursor: "pointer" }}>
@@ -229,15 +221,23 @@ export default function ApplicationShell() {
             <Text><b>Email:</b> {user.email}</Text>
             <Text><b>Role:</b> {user.role}</Text>
             {user.role === "Referrer" && <Text><b>Package:</b> {!isFetching ? refPackage?.title : "Loading"}</Text>}
-            {user.role === "Referrer" && <Text><b>Amount:Rs </b> {!isFetching ? refPackage?.price : "Loading"}</Text>}
+            {user.role === "Referrer" && <Text><b>Amount: Rs </b>{!isFetching ? refPackage?.price : "Loading"}</Text>}
           </Card>
 
           <Card shadow="sm" radius="md" withBorder>
             <Title order={6}>Company Bank Details</Title>
-            <Text><b>Bank Name:</b> {companyBank.bankName}</Text>
-            <Text><b>Account Title:</b> {companyBank.accounttitle}</Text>
-            <Text><b>IBAN:</b> {companyBank.IBN}</Text>
-            <Text><b>Account Number:</b> {companyBank.accountnumber}</Text>
+            {isBankLoading ? (
+              <Text>Loading...</Text>
+            ) : companyBank ? (
+              <>
+                <Text><b>Bank Name:</b> {companyBank.bankName}</Text>
+                <Text><b>Account Title:</b> {companyBank.accountTitle}</Text>
+                <Text><b>IBAN:</b> {companyBank.iban}</Text>
+                <Text><b>Account Number:</b> {companyBank.accountNumber}</Text>
+              </>
+            ) : (
+              <Text color="dimmed">Bank details not available</Text>
+            )}
           </Card>
 
           <Divider />

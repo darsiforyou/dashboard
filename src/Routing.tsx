@@ -21,6 +21,7 @@ import Wallet from "./pages/Wallet";
 import { Success } from "./pages/Succes";
 import { OrderList } from "./pages/OrderList";
 import { MLM } from "./pages/Mlm";
+import BankDetails from "./pages/Bankdetail";
 
 export default function Routing() {
   return (
@@ -46,6 +47,7 @@ export default function Routing() {
           <Route path="/financials" element={<Financials />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/mlm" element={<MLM /> } />
+          <Route path="/Bank-detail" element={<BankDetails/>} />
 
         </Route>
         <Route path="/login" element={<Login />} />

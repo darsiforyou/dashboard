@@ -17,4 +17,7 @@ export const FINANCIALS = "/financials";
 export const DASHBOARD = "/dashboard";
 export const ACCOUNTS = "/user-bank-account";
 export const Mlm = "/milestone";
+export const FORGOT_PASSWORD_URL="/auth/forgot-password" 
+export const VERIFY_OTP_URL="/auth/verify-otp"
+export const RESET_PASSWORD_URL="/auth/reset-password"
 
