@@ -33,6 +33,7 @@ import { useQuery, useMutation } from "react-query";
 import axiosConfig from "./configs/axios";
 import { showNotification } from "@mantine/notifications";
 import { USERS } from "./utils/API_CONSTANT";
+import useLiveUser from "./hooks/useLiveUser";
 
 export default function ApplicationShell() {
   const theme = useMantineTheme();
@@ -47,7 +48,15 @@ export default function ApplicationShell() {
   const { colorScheme } = useMantineColorScheme();
   const dark = colorScheme === "dark";
 
-  const user = JSON.parse(sessionStorage.getItem("user") || "{}");
+ 
+
+
+const sessionUser = JSON.parse(sessionStorage.getItem("user") || "{}");
+const user = useLiveUser(sessionUser._id);
+
+
+
+
 
   const { data: refPackage, isFetching } = useQuery({
     queryKey: ["package", user.referral_package],

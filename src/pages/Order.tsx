@@ -321,12 +321,26 @@ export function Orders({}: Props) {
               ),
             },
             { accessor: "name", width: 150, hidden: user.role !== "Admin" },
+
+
+            
             {
               accessor: "email",
               width: 150,
               hidden: user.role !== "Admin",
               ellipsis: true,
             },
+
+
+            {
+              accessor: "applied_Referral_Code",
+              width: 150,
+              hidden: user.role !== "Admin",
+              ellipsis: true,
+            },
+
+
+            
             { accessor: "phone", width: 100, hidden: user.role !== "Admin" },
             {
               accessor: "order_number",
@@ -441,6 +455,9 @@ export function Orders({}: Props) {
               hidden: user.role !== "Admin",
               render: (record: Order, index) => <span>{record.city}</span>,
             },
+
+
+
             {
               accessor: "paymentMethod",
               hidden: user.role !== "Admin",

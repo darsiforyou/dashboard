@@ -79,26 +79,44 @@ export default function Dashboard({}: Props) {
   const { data: counts } = useQuery(
     ["counts", { code: user.role === "Referrer" ? user.user_code : "" }],
     fetchCounts,
+    // {
+    //   enabled: true,
+    //   refetchOnWindowFocus: false,
+    // }
     {
-      enabled: true,
-      refetchOnWindowFocus: false,
+    refetchInterval: 10000, // every 10 seconds
+    refetchOnWindowFocus: true,
+  
+
+
+
     }
+
+
   );
   
   const { data: refCounts } = useQuery(
     ["refCounts", { user: user }],
     fetchCountsRef,
-    {
-      enabled: true,
-      refetchOnWindowFocus: false,
+    // {
+    //   enabled: true,
+    //   refetchOnWindowFocus: false,
+
+      {
+    refetchInterval: 10000, // every 10 seconds
+    refetchOnWindowFocus: true,
+  
+
+
+
     }
   );
   const { data: venCounts } = useQuery(
     ["venCounts", { user: user }],
     fetchCountsVendor,
     {
-      enabled: true,
-      refetchOnWindowFocus: false,
+       refetchInterval: 10000, // har 10 second me refresh
+    refetchOnWindowFocus: true, // tab active hone par bhi refresh
     }
   );
 
@@ -458,120 +476,121 @@ export default function Dashboard({}: Props) {
       ) : null}
       {user.role === "Referrer" ? (
         <SimpleGrid
-          cols={4}
-          breakpoints={[
-            { minWidth: 300, cols: 1 },
-            { minWidth: 1200, cols: 3 },
-          ]}
-        >
-          <Paper
-            shadow="xs"
-            p="sm"
-            sx={(theme) => ({
-              borderLeft: `4px solid ${theme.colors.blue[5]}`,
-            })}
-          >
-            <Group>
-              <ThemeIcon>
-                <ShoppingCart size={16} />
-              </ThemeIcon>
-              <Text weight={700}>Orders</Text>
-            </Group>
-            <Group my={"sm"} styles={{ width: "100%" }}>
-              <Stack align="center" spacing="xs">
-                <Text size="xl" my={0}>
-                  {convertToMoney(refCounts?.data?.orders?.ordersPending || 0)}
-                </Text>
-                <Text size="sm" my={0}>
-                  Pending
-                </Text>
-              </Stack>
-              <Divider sx={{ height: "auto" }} orientation="vertical" />
-              <Stack align="center" spacing="xs" my={"sm"}>
-                <Text size="xl" my={0}>
-                  {convertToMoney(
-                    refCounts?.data?.orders?.ordersCompleted || 0
-                  )}
-                </Text>
-                <Text size="sm" my={0}>
-                  Completed
-                </Text>
-              </Stack>
-              <Divider sx={{ height: "auto" }} orientation="vertical" />
-              <Stack align="center" spacing="xs" my={"sm"}>
-                <Text size="xl" my={0}>
-                  {convertToMoney(
-                    refCounts?.data?.orders?.ordersCancelled || 0
-                  )}
-                </Text>
-                <Text size="sm" my={0}>
-                  Cancelled
-                </Text>
-              </Stack>
-            </Group>
-          </Paper>
-          <Paper
-            shadow="xs"
-            p="sm"
-            sx={(theme) => ({
-              borderLeft: `4px solid ${theme.colors.blue[5]}`,
-            })}
-          >
-            <Group>
-              <ThemeIcon>
-                <User size={16} />
-              </ThemeIcon>
-              <Text weight={700}>Users</Text>
-            </Group>
-            <Group my={"sm"} styles={{ width: "100%" }}>
-              <Stack align="center" spacing="xs">
-                <Text size="xl" my={0}>
-                  {convertToMoney(refCounts?.data?.users?.userCustomer || 0)}
-                </Text>
-                <Text size="sm" my={0}>
-                  Customers
-                </Text>
-              </Stack>
-              <Divider sx={{ height: "auto" }} orientation="vertical" />
-              <Stack align="center" spacing="xs" my={"sm"}>
-                <Text size="xl" my={0}>
-                  {convertToMoney(refCounts?.data?.users?.userReferrer || 0)}
-                </Text>
-                <Text size="sm" my={0}>
-                  Referrer
-                </Text>
-              </Stack>
-            </Group>
-          </Paper>
-          <Paper
-            shadow="xs"
-            p="sm"
-            sx={(theme) => ({
-              borderLeft: `4px solid ${theme.colors.blue[5]}`,
-            })}
-          >
-            <Group>
-              <ThemeIcon>
-                <ReportMoney size={16} />
-              </ThemeIcon>
-              <Text weight={700}>Revenue</Text>
-            </Group>
-            <Group my={"sm"} styles={{ width: "100%" }}>
-              <Stack align="center" spacing="xs">
-                <Text size="xl" my={0}>
-                  Rs.{" "}
-                  {convertToMoney(
-                    +venCounts?.data?.revenue?.walletAmount || 0
-                  )}
-                </Text>
-                <Text size="sm" my={0}>
-                  Commission
-                </Text>
-              </Stack>
-            </Group>
-          </Paper>
-        </SimpleGrid>
+    cols={3}
+    breakpoints={[
+      { minWidth: 300, cols: 1 },
+      { minWidth: 900, cols: 3 },
+    ]}
+  >
+    {/* Orders Section */}
+    <Paper
+      shadow="xs"
+      p="sm"
+      sx={(theme) => ({
+        borderLeft: `4px solid ${theme.colors.blue[5]}`,
+      })}
+    >
+      <Group>
+        <ThemeIcon>
+          <ShoppingCart size={16} />
+        </ThemeIcon>
+        <Text weight={700}>Orders</Text>
+      </Group>
+      <Group my={"sm"} styles={{ width: "100%" }}>
+        <Stack align="center" spacing="xs">
+          <Text size="xl" my={0}>
+            {convertToMoney(refCounts?.data?.orders?.ordersPending || 0)}
+          </Text>
+          <Text size="sm" my={0}>
+            Pending
+          </Text>
+        </Stack>
+        <Divider sx={{ height: "auto" }} orientation="vertical" />
+        <Stack align="center" spacing="xs" my={"sm"}>
+          <Text size="xl" my={0}>
+            {convertToMoney(refCounts?.data?.orders?.ordersCompleted || 0)}
+          </Text>
+          <Text size="sm" my={0}>
+            Completed
+          </Text>
+        </Stack>
+        <Divider sx={{ height: "auto" }} orientation="vertical" />
+        <Stack align="center" spacing="xs" my={"sm"}>
+          <Text size="xl" my={0}>
+            {convertToMoney(refCounts?.data?.orders?.ordersCancelled || 0)}
+          </Text>
+          <Text size="sm" my={0}>
+            Cancelled
+          </Text>
+        </Stack>
+      </Group>
+    </Paper>
+
+    {/* Users Section */}
+    <Paper
+      shadow="xs"
+      p="sm"
+      sx={(theme) => ({
+        borderLeft: `4px solid ${theme.colors.blue[5]}`,
+      })}
+    >
+      <Group>
+        <ThemeIcon>
+          <User size={16} />
+        </ThemeIcon>
+        <Text weight={700}>Users</Text>
+      </Group>
+      <Group my={"sm"} styles={{ width: "100%" }}>
+        <Stack align="center" spacing="xs">
+          <Text size="xl" my={0}>
+            {convertToMoney(refCounts?.data?.users?.userCustomer || 0)}
+          </Text>
+          <Text size="sm" my={0}>
+            Customers
+          </Text>
+        </Stack>
+        <Divider sx={{ height: "auto" }} orientation="vertical" />
+        <Stack align="center" spacing="xs" my={"sm"}>
+          <Text size="xl" my={0}>
+            {convertToMoney(refCounts?.data?.users?.userReferrer || 0)}
+          </Text>
+          <Text size="sm" my={0}>
+            Referrers
+          </Text>
+        </Stack>
+      </Group>
+    </Paper>
+
+    {/* Revenue / Commission Section */}
+    <Paper
+      shadow="xs"
+      p="sm"
+      sx={(theme) => ({
+        borderLeft: `4px solid ${theme.colors.blue[5]}`,
+      })}
+    >
+      <Group>
+        <ThemeIcon>
+          <ReportMoney size={16} />
+        </ThemeIcon>
+        <Text weight={700}>Revenue</Text>
+      </Group>
+      <Group my={"sm"} styles={{ width: "100%" }}>
+        <Stack align="center" spacing="xs">
+          <Text size="xl" my={0}>
+            Rs. {convertToMoney(venCounts?.data?.revenue?.walletAmount || 0)}
+          </Text>
+          <Text size="sm" my={0}>
+            Commission
+          </Text>
+        </Stack>
+      </Group>
+    </Paper>
+  </SimpleGrid>
       ) : null}
+
+
+
       {user.role === "Admin" && (
         <>
           <Divider
