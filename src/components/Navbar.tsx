@@ -188,6 +188,12 @@ const data = [
     icon: Settings,
     permision: ["Admin"],
   },
+  {
+    link: "/dashboard-password",
+    label: "Dashboard Password",
+    icon: Settings,
+    permision: ["Admin"],
+  },
 
 ];
 
