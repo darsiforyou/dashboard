@@ -17,9 +17,10 @@ type User = {
   accessToken: string;
 };
 const user = JSON.parse(sessionStorage.getItem("user") || "{}");
+const accessToken = JSON.parse(sessionStorage.getItem("accessToken") || "{}");
 // Where you would set stuff like your 'Authorization' header, etc ...
 axiosConfig.defaults.headers.common["Authorization"] =
-  "Bearer " + user?.accessToken;
+  "Bearer " + accessToken;
 
 // Also add/ configure interceptors && all the other cool stuff
 

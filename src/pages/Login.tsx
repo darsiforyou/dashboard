@@ -63,6 +63,7 @@ export function Login() {
         showNotification({ message: "You are not Authorized", color: "orange", autoClose: 5000 });
       } else {
         sessionStorage.setItem("user", JSON.stringify(data));
+        sessionStorage.setItem("accessToken", JSON.stringify(data.accessToken));
         window.location.href = "/";
       }
     } else {
