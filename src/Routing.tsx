@@ -23,6 +23,8 @@ import { OrderList } from "./pages/OrderList";
 import { MLM } from "./pages/Mlm";
 import BankDetails from "./pages/Bankdetail";
 import ChangePassword from "./pages/Chagepassword";
+import { AdminUpgradeRequests } from "./pages/AdminUpgradeRequests";
+
 
 export default function Routing() {
   return (
@@ -50,6 +52,7 @@ export default function Routing() {
           <Route path="/mlm" element={<MLM /> } />
           <Route path="/Bank-detail" element={<BankDetails/>} />
           <Route path="/dashboard-password" element={<ChangePassword/>} />
+          <Route path="/payment-processing" element={<AdminUpgradeRequests/>} />
 
         </Route>
         <Route path="/login" element={<Login />} />

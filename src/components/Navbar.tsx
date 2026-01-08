@@ -194,6 +194,12 @@ const data = [
     icon: Settings,
     permision: ["Admin"],
   },
+  {
+    link: "/payment-processing",
+    label: "Payment processing",
+    icon: Settings,
+    permision: ["Admin"],
+  },
 
 ];
 
