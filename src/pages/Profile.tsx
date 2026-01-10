@@ -1257,7 +1257,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
                           <Stack spacing="xs">
                             <Group spacing="xs">
                               <IconCheck size={16} color="green" />
-                              <Text>Commission rate: {currentPackage.commission_rate}%</Text>
+                              <Text>Commission rate: {currentPackage.commission}%</Text>
                             </Group>
                             <Group spacing="xs">
                               <IconCheck size={16} color="green" />
@@ -1265,13 +1265,17 @@ const [showBankDetails, setShowBankDetails] = useState(false);
                             </Group>
                             <Group spacing="xs">
                               <IconCheck size={16} color="green" />
-                              <Text>Direct Referal Profit 25%</Text>
+                              <Text>Direct Referral Profit 25%</Text>
                             </Group>
                             <Group spacing="xs">
                               <IconCheck size={16} color="green" />
                               <Text>2nd Line Profit 15%</Text>
-                              <IconCheck size={16} color="green" />
+                              
+                            </Group>
+                            <Group spacing="xs">
+                             <IconCheck size={16} color="green" />
                               <Text>3rd Line Profit 10%</Text>
+                              
                             </Group>
                           </Stack>
                         </>
