@@ -1261,15 +1261,17 @@ const [showBankDetails, setShowBankDetails] = useState(false);
                             </Group>
                             <Group spacing="xs">
                               <IconCheck size={16} color="green" />
-                              <Text>Direct referral bonuses</Text>
+                               <Text>Discount rate: {currentPackage.discount_percentage}%</Text>
                             </Group>
                             <Group spacing="xs">
                               <IconCheck size={16} color="green" />
-                              <Text>Weekly payout system</Text>
+                              <Text>Direct Referal Profit 25%</Text>
                             </Group>
                             <Group spacing="xs">
                               <IconCheck size={16} color="green" />
-                              <Text>Priority support</Text>
+                              <Text>2nd Line Profit 15%</Text>
+                              <IconCheck size={16} color="green" />
+                              <Text>3rd Line Profit 10%</Text>
                             </Group>
                           </Stack>
                         </>
