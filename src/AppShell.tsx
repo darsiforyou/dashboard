@@ -27,7 +27,7 @@ import {
 import { NavbarSimple } from "./components/Navbar";
 import { Sun, MoonStars, Logout, Settings } from "tabler-icons-react";
 import darsiIcon from "./assets/darsi-logo.png";
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { Link, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { IconCheck, IconCopy } from "@tabler/icons";
 import { useQuery, useMutation } from "react-query";
 import axiosConfig from "./configs/axios";
@@ -54,7 +54,7 @@ export default function ApplicationShell() {
 const sessionUser = JSON.parse(sessionStorage.getItem("user") || "{}");
 const user = useLiveUser(sessionUser._id);
 
-
+   const navigate=useNavigate();
 
 
 
@@ -173,9 +173,12 @@ const user = useLiveUser(sessionUser._id);
               {user.role === "Referrer" && (
                 <Box sx={{ display: "flex", marginRight: 20, alignItems: "center" }}>
                   {(!user.transaction_id || user.transaction_id.length <= 5) && !user.referral_payment_status ? (
-                    <Text color="red" weight={600} style={{ cursor: "pointer" }} onClick={handleUnpaidClick}>
+
+                    
+                    <Text color="red" weight={600} style={{ cursor: "pointer" }} onClick={() => navigate('/profile')} >
                       UNPAID
                     </Text>
+                    
                   ) : user.transaction_id?.length > 5 && !user.referral_payment_status ? (
                     <Text>Verification In Process</Text>
                   ) : (

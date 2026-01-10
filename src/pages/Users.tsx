@@ -43,7 +43,7 @@ const schema = z.object({
   referral_package: z.string().optional(),
   transaction_id: z.string().optional(),
   paymentScreenshotURL: z.string().optional(),
-  referral_payment_status: z.enum(["Paid", "Unpaid"]).optional(),
+  // referral_payment_status: z.enum(["Paid", "Unpaid"]).optional(),
 });
 
 const useStyles = createStyles((theme) => ({
@@ -106,7 +106,7 @@ export function Users({}: Props) {
       referral_package: "",
       transaction_id: "",
       paymentScreenshotURL: "",
-      referral_payment_status: "" as "Paid" | "Unpaid",
+      // referral_payment_status: "" as "Paid" | "Unpaid",
     },
   });
 
@@ -150,7 +150,7 @@ export function Users({}: Props) {
       form.setValues({
         ...data,
         password: "",
-        referral_payment_status: data.referral_payment_status === true ? "Paid" : "Unpaid",
+        // referral_payment_status: data.referral_payment_status === true ? true : false,
       });
     } else {
       form.reset();
@@ -329,10 +329,10 @@ export function Users({}: Props) {
               <TextInput label="Referred by" placeholder="Referred by" {...form.getInputProps("referred_by")} disabled={user.role !== "Admin"} />
               <TextInput label="Transaction ID" {...form.getInputProps("transaction_id")} />
               <TextInput label="Payment Screenshot URL" {...form.getInputProps("paymentScreenshotURL")} />
-              <Select label="Referral Payment Status" mt="xs" clearable data={[
+              {/* <Select label="Referral Payment Status" mt="xs" clearable data={[
                 { value: "Paid", label: "Paid" },
                 { value: "Unpaid", label: "Unpaid" },
-              ]} {...form.getInputProps("referral_payment_status")} />
+              ]} {...form.getInputProps("referral_payment_status")} /> */}
             </>
           )}
 

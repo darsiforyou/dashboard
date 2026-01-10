@@ -23,7 +23,8 @@ import { OrderList } from "./pages/OrderList";
 import { MLM } from "./pages/Mlm";
 import BankDetails from "./pages/Bankdetail";
 import ChangePassword from "./pages/Chagepassword";
-import { AdminUpgradeRequests } from "./pages/AdminUpgradeRequests";
+import AdminUpgradeRequests from "./pages/AdminUpgradeRequests";
+
 
 
 export default function Routing() {
