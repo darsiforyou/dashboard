@@ -1,4 +1,4 @@
-// Profile.tsx - 完整修复版（包含完整收益管理和提现功能）
+// Profile.tsx - Complete Version with Only Package Activation Earnings
 import { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "react-query";
 import { showNotification } from "@mantine/notifications";
@@ -34,7 +34,8 @@ import {
   Progress,
   useMantineTheme,
   Stepper,
-  createStyles
+  createStyles,
+  ScrollArea
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { 
@@ -61,19 +62,66 @@ import {
   LockOpen as IconLockOpen,
   Moneybag as IconMoneybag,
   Wallet as IconWallet,
-  Cash as IconCash
+  Cash as IconCash,
+  Users as IconUsers,
+  UserPlus as IconUserPlus,
+  TrendingUp as IconTrendingUp,
+  Refresh as IconRefresh,
+  Filter as IconFilter
 } from "tabler-icons-react";
 import { CopyButton } from "@mantine/core";
 import { IconArrowRight, IconInfoCircle } from "@tabler/icons";
 import { format } from "fecha";
+import axios, { AxiosResponse } from "axios";
+import { Link as IconLink } from 'tabler-icons-react';
 
-const useStyles = createStyles(() => ({
+const useStyles = createStyles((theme) => ({
   header: {
     display: "flex",
     alignItems: "center",
     justifyContent: "start",
     width: "100%",
   },
+  statCard: {
+    transition: 'all 0.2s ease',
+    '&:hover': {
+      transform: 'translateY(-2px)',
+      boxShadow: theme.shadows.md,
+    }
+  },
+  referralBadge: {
+    background: 'linear-gradient(45deg, #667eea 0%, #764ba2 100%)',
+    color: 'white',
+    fontWeight: 700,
+  },
+  earningsCard: {
+    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    color: 'white',
+  },
+  tableRow: {
+    '&:hover': {
+      backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[6] : theme.colors.gray[0],
+    }
+  },
+  levelIndicator: {
+    width: 30,
+    height: 30,
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  level1: {
+    backgroundColor: '#f59f00', // Orange
+  },
+  level2: {
+    backgroundColor: '#228be6', // Blue
+  },
+  level3: {
+    backgroundColor: '#40c057', // Green
+  }
 }));
 
 export function Profile() {
@@ -115,13 +163,27 @@ export function Profile() {
   const [isLoadingEarnings, setIsLoadingEarnings] = useState(false);
   const [activeWithdrawalTab, setActiveWithdrawalTab] = useState<string>("All");
   const [acceptModal, setAcceptModal] = useState(false);
-  // آپ کے existing states کے ساتھ
-const [showBankDetails, setShowBankDetails] = useState(false);
+  const [showBankDetails, setShowBankDetails] = useState(false);
   const [acceptRequest, setAcceptRequest]: any = useState({});
+  
+  // Referral history states - ONLY PACKAGE ACTIVATION EARNINGS
+  const [referralHistory, setReferralHistory] = useState<any>(null);
+  const [isLoadingReferrals, setIsLoadingReferrals] = useState(false);
+  const [referralStats, setReferralStats] = useState({
+    totalReferrals: 0,
+    totalPackageEarnings: 0, // Only package activation earnings
+    level1: { count: 0, packageEarnings: 0 },
+    level2: { count: 0, packageEarnings: 0 },
+    level3: { count: 0, packageEarnings: 0 }
+  });
+
+
+
+
   
   const queryClient = useQueryClient();
 
-  // 检查是否是首次设置套餐
+  // Check if first time package setup
   useEffect(() => {
     if (user?.role === "Referrer" && !user?.referral_package) {
       setIsFirstTimeSetup(true);
@@ -129,7 +191,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
     }
   }, [user]);
 
-  // 获取用户详情
+  // Fetch user details
   const { data: userData, refetch: refetchUser } = useQuery({
     queryKey: ["user", user?._id],
     queryFn: async () => {
@@ -147,7 +209,74 @@ const [showBankDetails, setShowBankDetails] = useState(false);
     }
   });
 
-  // 获取套餐升级请求
+  // Fetch referral history with ONLY PACKAGE ACTIVATION EARNINGS
+  const fetchReferralHistory = async () => {
+    if (!user?.user_code) return null;
+    setIsLoadingReferrals(true);
+    try {
+      const res = await axiosConfig.get(`/dashboard/ref_count/${user.user_code}`);
+      const data = res.data;
+      
+      if (data?.data) {
+        setReferralHistory(data.data);
+        
+        // Calculate referral stats - ONLY PACKAGE ACTIVATION
+        const stats = {
+          totalReferrals: 0,
+          totalPackageEarnings: 0,
+          level1: { count: 0, packageEarnings: 0 },
+          level2: { count: 0, packageEarnings: 0 },
+          level3: { count: 0, packageEarnings: 0 }
+        };
+
+        // Calculate level 1 stats - ONLY ACTIVATION COMMISSION
+        if (data.data.users?.level1) {
+          stats.level1.count = data.data.users.level1.userReferrer || 0;
+          stats.level1.packageEarnings = data.data.users.level1.activationCommission || 0;
+          stats.totalReferrals += stats.level1.count;
+          stats.totalPackageEarnings += stats.level1.packageEarnings;
+        }
+
+        // Calculate level 2 stats - ONLY ACTIVATION COMMISSION
+        if (data.data.users?.level2) {
+          stats.level2.count = data.data.users.level2.userReferrer || 0;
+          stats.level2.packageEarnings = data.data.users.level2.activationCommission || 0;
+          stats.totalReferrals += stats.level2.count;
+          stats.totalPackageEarnings += stats.level2.packageEarnings;
+        }
+
+        // Calculate level 3 stats - ONLY ACTIVATION COMMISSION
+        if (data.data.users?.level3) {
+          stats.level3.count = data.data.users.level3.userReferrer || 0;
+          stats.level3.packageEarnings = data.data.users.level3.activationCommission || 0;
+          stats.totalReferrals += stats.level3.count;
+          stats.totalPackageEarnings += stats.level3.packageEarnings;
+        }
+
+        setReferralStats(stats);
+      }
+      return data;
+    } catch (error) {
+      console.error("Error fetching referral history:", error);
+      return null;
+    } finally {
+      setIsLoadingReferrals(false);
+    }
+  };
+
+  // Use query for referral history with auto-refresh
+  const { 
+    data: referralData, 
+    refetch: refetchReferralHistory 
+  } = useQuery({
+    queryKey: ["referral-history", user?.user_code],
+    queryFn: fetchReferralHistory,
+    enabled: !!user?.user_code && user?.role === "Referrer",
+    // refetchInterval: 1000000, // Refresh every 30 seconds
+    refetchOnWindowFocus: true,
+  });
+
+  // Fetch package upgrade requests
   const { 
     data: userRequests, 
     isLoading: requestsLoading,
@@ -162,7 +291,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
     enabled: !!user?._id,
   });
 
-  // 获取激活请求
+  // Fetch activation requests
   const { 
     data: activationRequests, 
     isLoading: activationLoading,
@@ -177,7 +306,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
     enabled: !!user?._id,
   });
 
-  // 获取升级历史
+  // Fetch upgrade history
   const { 
     data: upgradeHistory, 
     isLoading: historyLoading,
@@ -192,7 +321,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
     enabled: false,
   });
 
-  // 获取所有套餐
+  // Fetch all packages
   const { isLoading: packagesLoading } = useQuery({
     queryKey: "referral-packages",
     queryFn: async () => {
@@ -212,7 +341,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
     }
   });
 
-  // 获取公司银行信息
+  // Fetch company bank info
   const { isLoading: bankLoading } = useQuery({
     queryKey: "company-bank",
     queryFn: async () => {
@@ -224,7 +353,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
     }
   });
 
-  // 获取钱包设置
+  // Fetch wallet settings
   const { isLoading: walletSettingsLoading } = useQuery({
     queryKey: ["wallet-settings"],
     queryFn: async () => {
@@ -238,11 +367,10 @@ const [showBankDetails, setShowBankDetails] = useState(false);
     }
   });
 
-  // 获取用户银行账户
+  // Fetch user bank accounts
   const fetchUserBankAccounts = async () => {
     if (!user?._id) return [];
     const res = await axiosConfig.get(`${ACCOUNTS}/user/${user?._id}?&limit=100`);
-    
     return res.data?.data?.docs || [];
   };
 
@@ -263,7 +391,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
     }
   });
 
-  // 获取钱包数据
+  // Fetch wallet data - Include Financials data
   const fetchWalletData = async () => {
     if (!user?._id) return {};
     const params = new URLSearchParams({
@@ -288,7 +416,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
     }
   });
 
-  // 获取提现请求
+  // Fetch withdrawal requests
   const fetchWithdrawalRequests = async () => {
     if (!user?._id) return [];
     const res = await axiosConfig.get(
@@ -307,7 +435,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
     onSuccess: (data) => {
       setWithdrawalRequests(data);
       
-      // 计算各种状态的总额
+      // Calculate totals by status
       const pendingTotal = data
         .filter((r: any) => r.status === "Pending")
         .reduce((sum: number, r: any) => sum + (r.amountRequested || 0), 0);
@@ -325,7 +453,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
     }
   });
 
-  // 检查是否有任何待处理的请求
+  // Check for any pending requests
   const hasPendingActivationRequest = activationRequests?.data?.some(
     (req: any) => req.status === "pending"
   );
@@ -334,12 +462,12 @@ const [showBankDetails, setShowBankDetails] = useState(false);
   );
   const hasAnyPendingRequest = hasPendingActivationRequest || hasPendingUpgradeRequest;
 
-  // 获取当前套餐激活状态
+  // Get current package activation status
   const isPackageActive = user?.referral_payment_status === true;
   const hasPackageAssigned = !!user?.referral_package;
   const needsActivation = hasPackageAssigned && !isPackageActive;
 
-  // 检查是否可以提交激活请求
+  // Check if can submit activation/upgrade requests
   const canActivateCurrentPackage = needsActivation && !hasPendingActivationRequest;
   const canSubmitUpgradeRequest = isPackageActive && !hasPendingUpgradeRequest;
 
@@ -348,11 +476,13 @@ const [showBankDetails, setShowBankDetails] = useState(false);
       setActiveTab(value);
       if (value === "earnings") {
         loadEarningsData();
+      } else if (value === "referrals") {
+        refetchReferralHistory();
       }
     }
   };
 
-  // 加载收益数据
+  // Load earnings data
   const loadEarningsData = async () => {
     setIsLoadingEarnings(true);
     await Promise.all([
@@ -363,17 +493,18 @@ const [showBankDetails, setShowBankDetails] = useState(false);
     setIsLoadingEarnings(false);
   };
 
-  // 查找当前套餐
+  // Find current package
   const currentPackage = packages.find(p => p._id === user?.referral_package);
   
-  // 计算各种金额
+  // Calculate various amounts - Using Financials data
   const totalEarnings = revenue?.walletAmount || 0;
   const withdrawnAmount = revenue?.withdraw || 0;
+  const totalreferalamount = revenue?.referralIncome || 0;
   const availableBalance = totalEarnings - pendingAmount;
   const netWallet = availableBalance - (walletSettings.minAmount || 10);
   const canWithdraw = netWallet > 0;
 
-  // 当前套餐激活表单
+  // Current package activation form
   const currentPackageActivationForm = useForm({
     initialValues: {
       transaction_id: "",
@@ -384,7 +515,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
     },
   });
 
-  // 首次套餐选择表单
+  // First time package selection form
   const firstTimeForm = useForm({
     initialValues: {
       selected_package: "",
@@ -398,7 +529,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
     },
   });
 
-  // 升级表单
+  // Upgrade form
   const upgradeForm = useForm({
     initialValues: {
       requested_package: "",
@@ -412,7 +543,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
     },
   });
 
-  // 提现表单
+  // Withdrawal form
   const withdrawalForm = useForm({
     initialValues: {
       amount: 0,
@@ -425,13 +556,12 @@ const [showBankDetails, setShowBankDetails] = useState(false);
     },
   });
 
-  // 个人资料表单
+  // Profile form
   const profileForm = useForm({
     initialValues: {
       firstname: user?.firstname || "",
       lastname: user?.lastname || "",
       email: user?.email || "",
-      // phone: user?.phone || "",
     },
     validate: {
       firstname: (value) => !value.trim() ? "First name is required" : null,
@@ -440,7 +570,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
     },
   });
 
-  // 更新个人信息
+  // Update profile mutation
   const updateProfileMutation = useMutation({
     mutationFn: async (values: any) => {
       const formData = new FormData();
@@ -482,7 +612,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
     }
   });
 
-  // 当前套餐激活
+  // Current package activation mutation
   const activateCurrentPackageMutation = useMutation({
     mutationFn: async (values: any) => {
       if (!paymentFile) {
@@ -527,7 +657,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
     },
   });
 
-  // 首次套餐激活
+  // First package activation mutation
   const activatePackageMutation = useMutation({
     mutationFn: async (values: any) => {
       if (!paymentFile) {
@@ -569,7 +699,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
     },
   });
 
-  // 套餐升级
+  // Package upgrade mutation
   const upgradePackageMutation = useMutation({
     mutationFn: async (values: any) => {
       if (!paymentFile) {
@@ -611,7 +741,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
     },
   });
 
-  // 提现请求
+  // Withdrawal request mutation
   const withdrawalMutation = useMutation({
     mutationFn: async (values: any) => {
       const res = await axiosConfig.post("/financials/make-payment-request", {
@@ -644,7 +774,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
     },
   });
 
-  // 处理提现请求批准
+  // Handle withdrawal request approval
   const handleAcceptRequest = async (data: any) => {
     try {
       const res = await axiosConfig.get(
@@ -678,7 +808,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
     }
   };
 
-  // 处理提现请求拒绝
+  // Handle withdrawal request rejection
   const handleRejectRequest = async (requestId: string) => {
     try {
       const res = await axiosConfig.get(`/financials/reject-payment-request/${requestId}`);
@@ -700,7 +830,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
     }
   };
 
-  // 套餐选择处理
+  // Package selection handlers
   const handleFirstTimePackageSelect = (packageId: string) => {
     if (hasAnyPendingRequest) return;
     
@@ -723,7 +853,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
     }
   };
 
-  // 文件预览处理
+  // File preview handlers
   useEffect(() => {
     if (!paymentFile) {
       setPaymentPreview(null);
@@ -744,18 +874,18 @@ const [showBankDetails, setShowBankDetails] = useState(false);
     return () => URL.revokeObjectURL(url);
   }, [profileFile, user?.imageURL]);
 
-  // 查看历史记录
+  // View history handler
   const handleViewHistory = () => {
     setHistoryModalOpened(true);
     fetchHistory();
   };
 
-  // 查看支付详情
+  // View payment details handler
   const handleViewPaymentDetails = () => {
     setPaymentModalOpened(true);
   };
 
-  // 处理当前套餐激活
+  // Handle current package activation
   const handleActivateCurrentPackage = () => {
     if (!currentPackage) {
       showNotification({
@@ -779,7 +909,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
     currentPackageActivationForm.setFieldValue("amount", currentPackage.price);
   };
 
-  // 处理提现请求
+  // Handle withdrawal request
   const handleWithdrawalRequest = () => {
     if (!canWithdraw) {
       showNotification({
@@ -803,11 +933,26 @@ const [showBankDetails, setShowBankDetails] = useState(false);
     setWithdrawalModalOpened(true);
   };
 
-  // 过滤提现请求
+  // Filter withdrawal requests
   const filteredWithdrawalRequests = withdrawalRequests.filter((request: any) => {
     if (activeWithdrawalTab === "All") return true;
     return request.status === activeWithdrawalTab;
   });
+
+  // Format currency
+  const formatCurrency = (amount: number) => {
+    return `PKR ${amount?.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+
+  // Render referral level indicator
+  const renderLevelIndicator = (level: number) => {
+    const levelClass = level === 1 ? classes.level1 : level === 2 ? classes.level2 : classes.level3;
+    return (
+      <div className={`${classes.levelIndicator} ${levelClass}`}>
+        {level}
+      </div>
+    );
+  };
 
   if (!user?._id) {
     return (
@@ -819,7 +964,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
 
   return (
     <Box p="md">
-      {/* 有等待中的请求提醒 */}
+      {/* Pending request alerts */}
       {hasAnyPendingRequest && (
         <Alert 
           color="yellow" 
@@ -840,7 +985,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
         </Alert>
       )}
 
-      {/* 当前套餐需要激活提醒 */}
+      {/* Package activation required alert */}
       {needsActivation && !isFirstTimeSetup && !hasPendingActivationRequest && (
         <Alert 
           color="orange" 
@@ -867,7 +1012,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
         </Alert>
       )}
 
-      {/* 首次套餐设置提醒 */}
+      {/* First time setup alert */}
       {isFirstTimeSetup && !hasPendingActivationRequest && (
         <Alert 
           color="blue" 
@@ -890,11 +1035,12 @@ const [showBankDetails, setShowBankDetails] = useState(false);
             <Tabs.Tab value="package" icon={<IconPackage size={14} />}>
               {isFirstTimeSetup ? "Activate Package" : "My Package"}
             </Tabs.Tab>
+            <Tabs.Tab value="referrals" icon={<IconUsers size={14} />}>Referrals</Tabs.Tab>
             <Tabs.Tab value="earnings" icon={<IconMoneybag size={14} />}>Earnings</Tabs.Tab>
             <Tabs.Tab value="history" icon={<IconHistory size={14} />}>History</Tabs.Tab>
           </Tabs.List>
 
-          {/* 个人信息标签页 */}
+          {/* Profile Tab */}
           <Tabs.Panel value="profile" pt="xl">
             <SimpleGrid cols={2} breakpoints={[{ maxWidth: 'sm', cols: 1 }]} spacing="xl">
               <Card withBorder shadow="sm">
@@ -909,34 +1055,6 @@ const [showBankDetails, setShowBankDetails] = useState(false);
                         radius="xl"
                         color="blue"
                       />
-                      {/* <div>
-                        <FileButton
-                          onChange={setProfileFile}
-                          accept="image/png,image/jpeg,image/webp"
-                        >
-                          {(props) => (
-                            <Button 
-                              {...props} 
-                              leftIcon={<IconUpload size={16} />}
-                              variant="light"
-                              size="sm"
-                            >
-                              Change Photo
-                            </Button>
-                          )}
-                        </FileButton>
-                        {profileFile && (
-                          <Button
-                            size="xs"
-                            color="red"
-                            variant="subtle"
-                            mt="xs"
-                            onClick={() => setProfileFile(null)}
-                          >
-                            Remove
-                          </Button>
-                        )}
-                      </div> */}
                     </Group>
 
                     <TextInput
@@ -944,7 +1062,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
                       placeholder="Enter first name"
                       {...profileForm.getInputProps("firstname")}
                       required
-                       disabled
+                      disabled
                     />
                     
                     <TextInput
@@ -952,30 +1070,16 @@ const [showBankDetails, setShowBankDetails] = useState(false);
                       placeholder="Enter last name"
                       {...profileForm.getInputProps("lastname")}
                       required
-                       disabled
+                      disabled
                     />
 
-                    {/* <TextInput
-                      label="Email"
-                      placeholder="Enter email"
-                      {...profileForm.getInputProps("email")}
-                      required
-                      disabled
-                    /> */}
-
-                    {/* <TextInput
-                      label="Phone Number"
-                      placeholder="Enter phone number"
-                      {...profileForm.getInputProps("phone")}
-                    /> */}
-
-                    {/* <Button
+                    <Button
                       type="submit"
                       loading={updateProfileMutation.isLoading}
                       leftIcon={<IconCheck size={16} />}
                     >
                       Update Profile
-                    </Button> */}
+                    </Button>
                   </Stack>
                 </form>
               </Card>
@@ -1026,7 +1130,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
             </SimpleGrid>
           </Tabs.Panel>
 
-          {/* 套餐标签页 */}
+          {/* Package Tab */}
           <Tabs.Panel value="package" pt="xl">
             {isFirstTimeSetup ? (
               <Card withBorder shadow="sm">
@@ -1042,6 +1146,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
                       withBorder 
                       p="lg" 
                       radius="md"
+                      className={classes.statCard}
                       style={{ 
                         border: firstTimeForm.values.selected_package === pkg._id ? '2px solid #228be6' : undefined,
                         cursor: hasAnyPendingRequest ? 'not-allowed' : 'pointer',
@@ -1055,7 +1160,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
                       </Group>
                       
                       <Text size="xl" weight={700} mb="xs">
-                        PKR {pkg.price.toLocaleString()}
+                        {formatCurrency(pkg.price)}
                       </Text>
                       
                       <Text size="sm" color="dimmed" mb="md">
@@ -1079,7 +1184,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
                     <SimpleGrid cols={2}>
                       <div>
                         <Text size="sm" color="dimmed">Package Price</Text>
-                        <Text size="xl" weight={700}>PKR {selectedPackage.price.toLocaleString()}</Text>
+                        <Text size="xl" weight={700}>{formatCurrency(selectedPackage.price)}</Text>
                       </div>
                       <div>
                         <Text size="sm" color="dimmed">Commission Rate</Text>
@@ -1203,7 +1308,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
               </Card>
             ) : (
               <SimpleGrid cols={2} breakpoints={[{ maxWidth: 'sm', cols: 1 }]} spacing="xl">
-                {/* 当前套餐信息 */}
+                {/* Current Package Info */}
                 <Card withBorder shadow="sm">
                   <Title order={3} mb="md">Current Package</Title>
                   
@@ -1227,7 +1332,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
                         </Group>
                         
                         <Text style={{ fontSize: 32 }} weight={900} mb="xs">
-                          PKR {currentPackage.price.toLocaleString()}
+                          {formatCurrency(currentPackage.price)}
                         </Text>
                         
                         <Progress 
@@ -1263,7 +1368,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
                             </Group>
                             <Group spacing="xs">
                               <IconCheck size={16} color="green" />
-                               <Text>Discount rate: {currentPackage.discount_percentage}%</Text>
+                              <Text>Discount rate: {currentPackage.discount_percentage}%</Text>
                             </Group>
                             <Group spacing="xs">
                               <IconCheck size={16} color="green" />
@@ -1272,12 +1377,10 @@ const [showBankDetails, setShowBankDetails] = useState(false);
                             <Group spacing="xs">
                               <IconCheck size={16} color="green" />
                               <Text>2nd Line Profit 15%</Text>
-                              
                             </Group>
                             <Group spacing="xs">
-                             <IconCheck size={16} color="green" />
+                              <IconCheck size={16} color="green" />
                               <Text>3rd Line Profit 10%</Text>
-                              
                             </Group>
                           </Stack>
                         </>
@@ -1290,7 +1393,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
                   )}
                 </Card>
 
-                {/* 升级套餐表单 */}
+                {/* Package Upgrade Form */}
                 <Card withBorder shadow="sm">
                   <Title order={3} mb="md">Package Management</Title>
                   
@@ -1324,7 +1427,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
                           .filter(p => p.price > (currentPackage?.price || 0))
                           .map(pkg => ({
                             value: pkg._id,
-                            label: `${pkg.title} - PKR ${pkg.price.toLocaleString()}`
+                            label: `${pkg.title} - ${formatCurrency(pkg.price)}`
                           }))}
                         value={upgradeForm.values.requested_package}
                         onChange={handleUpgradePackageSelect}
@@ -1350,7 +1453,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
                             <div>
                               <Text size="sm" color="dimmed">Upgrade Cost</Text>
                               <Text style={{ fontSize: 24 }} weight={700} color="green">
-                                PKR {selectedPackage.price }
+                                {formatCurrency(selectedPackage.price)}
                               </Text>
                             </div>
                           </SimpleGrid>
@@ -1475,7 +1578,303 @@ const [showBankDetails, setShowBankDetails] = useState(false);
             )}
           </Tabs.Panel>
 
-          {/* 收益标签页 */}
+          {/* Referrals Tab - ONLY PACKAGE ACTIVATION EARNINGS */}
+          <Tabs.Panel value="referrals" pt="xl">
+            {user.role === "Referrer" ? (
+              <Stack spacing="xl">
+                {/* Referral Stats Summary - ONLY PACKAGE EARNINGS */}
+                <SimpleGrid cols={4} breakpoints={[
+                  { maxWidth: 'lg', cols: 2 },
+                  { maxWidth: 'sm', cols: 1 }
+                ]} spacing="lg">
+                  <Card withBorder shadow="sm" className={classes.statCard}>
+                    <Group position="apart">
+                      <div>
+                        <Text size="sm" color="dimmed">Total Referrals</Text>
+                        <Text style={{ fontSize: 28 }} weight={900}>
+                          {referralStats.totalReferrals}
+                        </Text>
+                      </div>
+                      <IconUsers size={32} color="blue" />
+                    </Group>
+                    <Progress 
+                      value={referralStats.totalReferrals > 0 ? 100 : 0} 
+                      size="md" 
+                      color="blue" 
+                      mt="sm" 
+                    />
+                  </Card>
+
+                  <Card withBorder shadow="sm" className={classes.statCard}>
+                    <Group position="apart">
+                      <div>
+                        <Text size="sm" color="dimmed">Package Earnings</Text>
+                        <Text style={{ fontSize: 28 }} weight={900}>
+                          {formatCurrency(totalreferalamount)}
+                        </Text>
+                      </div>
+                      <IconMoneybag size={32} color="green" />
+                    </Group>
+                    <Progress 
+                      value={referralStats.totalPackageEarnings > 0 ? 100 : 0} 
+                      size="md" 
+                      color="green" 
+                      mt="sm" 
+                    />
+                  </Card>
+
+                  {/* <Card withBorder shadow="sm" className={classes.statCard}>
+                    <Group position="apart">
+                      <div>
+                        <Text size="sm" color="dimmed">Level 1 Earnings</Text>
+                        <Text style={{ fontSize: 28 }} weight={900}>
+                          {formatCurrency(referralStats.level1.packageEarnings)}
+                        </Text>
+                        <Text size="sm" color="dimmed">
+                          {referralStats.level1.count} users
+                        </Text>
+                      </div>
+                      <IconUserPlus size={32} color="orange" />
+                    </Group>
+                    <Progress 
+                      value={referralStats.level1.count > 0 ? 100 : 0} 
+                      size="md" 
+                      color="orange" 
+                      mt="sm" 
+                    />
+                  </Card> */}
+
+                  {/* <Card withBorder shadow="sm" className={classes.statCard}>
+                    <Group position="apart">
+                      <div>
+                        <Text size="sm" color="dimmed">Level 2 & 3 Earnings</Text>
+                        <Text style={{ fontSize: 28 }} weight={900}>
+                          {formatCurrency(referralStats.level2.packageEarnings + referralStats.level3.packageEarnings)}
+                        </Text>
+                        <Text size="sm" color="dimmed">
+                          {referralStats.level2.count + referralStats.level3.count} users
+                        </Text>
+                      </div>
+                      <IconTrendingUp size={32} color="violet" />
+                    </Group>
+                    <Progress 
+                      value={(referralStats.level2.count + referralStats.level3.count) > 0 ? 100 : 0} 
+                      size="md" 
+                      color="violet" 
+                      mt="sm" 
+                    />
+                  </Card> */}
+                </SimpleGrid>
+
+                {/* Package Earnings Breakdown */}
+                <Card withBorder shadow="sm">
+                  <Group position="apart" mb="md">
+                    <Title order={3}>Package Activation Earnings</Title>
+                    <Button 
+                      variant="light" 
+                      size="sm" 
+                      leftIcon={<IconRefresh size={14} />}
+                      onClick={() => refetchReferralHistory()}
+                      loading={isLoadingReferrals}
+                    >
+                      Refresh
+                    </Button>
+                  </Group>
+                  
+                  <SimpleGrid cols={3} spacing="lg">
+                    <Card withBorder p="md" className={classes.earningsCard}>
+                      <div className={`${classes.levelIndicator} ${classes.level1}`}>1</div>
+                      <Text weight={700} mt="md" color="white">Direct Referrals</Text>
+                      <Text size="sm" color="white" opacity={0.9}>25% Commission</Text>
+                      <Text size="xl" weight={900} color="white" mt="md">
+                       Total {referralStats.level1.count}
+                      </Text>
+                     
+                    </Card>
+
+                    <Card withBorder p="md" className={classes.earningsCard}>
+                      <div className={`${classes.levelIndicator} ${classes.level2}`}>2</div>
+                      <Text weight={700} mt="md" color="white">Second Level</Text>
+                      <Text size="sm" color="white" opacity={0.9}>15% Commission</Text>
+                      <Text size="xl" weight={900} color="white" mt="md">
+                        Total {referralStats.level2.count}
+                      </Text>
+                     
+                    </Card>
+
+                    <Card withBorder p="md" className={classes.earningsCard}>
+                      <div className={`${classes.levelIndicator} ${classes.level3}`}>3</div>
+                      <Text weight={700} mt="md" color="white">Third Level</Text>
+                      <Text size="sm" color="white" opacity={0.9}>10% Commission</Text>
+                      <Text size="xl" weight={900} color="white" mt="md">
+                       Total {referralStats.level3.count}
+                      </Text>
+                     
+                    </Card>
+                  </SimpleGrid>
+                </Card>
+
+                {/* Referral Users Table - ONLY PACKAGE EARNINGS */}
+                <Card withBorder shadow="sm">
+                  <Title order={3} mb="md">Referral Details</Title>
+                  
+                  {isLoadingReferrals ? (
+                    <Center py="xl">
+                      <Loader />
+                    </Center>
+                  ) : referralHistory?.users ? (
+                    <Tabs defaultValue="level1">
+                      <Tabs.List>
+                        <Tabs.Tab value="level1" icon={<div className={`${classes.levelIndicator} ${classes.level1}`}>1</div>}>
+                          Direct Referrals ({referralHistory.users.level1?.userReferrer || 0})
+                        </Tabs.Tab>
+                        <Tabs.Tab value="level2" icon={<div className={`${classes.levelIndicator} ${classes.level2}`}>2</div>}>
+                          Level 2 ({referralHistory.users.level2?.userReferrer || 0})
+                        </Tabs.Tab>
+                        <Tabs.Tab value="level3" icon={<div className={`${classes.levelIndicator} ${classes.level3}`}>3</div>}>
+                          Level 3 ({referralHistory.users.level3?.userReferrer || 0})
+                        </Tabs.Tab>
+                      </Tabs.List>
+
+                      {["level1", "level2", "level3"].map((level) => (
+                        <Tabs.Panel key={level} value={level} pt="md">
+                          {referralHistory.users[level]?.users?.length > 0 ? (
+                            <ScrollArea style={{ height: 400 }}>
+                              <Table>
+                                <thead>
+                                  <tr>
+                                    <th>User</th>
+                                    {/* <th>Email</th> */}
+                                    <th>User Code</th>
+                                    <th>Joined Date</th>
+                                    {/* <th>Package Earnings</th> */}
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {referralHistory.users[level].users.map((user: any, index: number) => (
+                                    <tr key={user._id} className={classes.tableRow}>
+                                      <td>
+                                        <Group spacing="sm">
+                                          <Avatar size={30} radius={30}>
+                                            {user.firstname?.[0]}{user.lastname?.[0]}
+                                          </Avatar>
+                                          <Text size="sm" weight={500}>
+                                            {user.firstname} {user.lastname}
+                                          </Text>
+                                        </Group>
+                                      </td>
+                                      {/* <td>
+                                        <Text size="sm">{user.email}</Text>
+                                      </td> */}
+                                      <td>
+                                        <Badge variant="outline" color="blue">
+                                          {user.user_code}
+                                        </Badge>
+                                      </td>
+                                      <td>
+                                        <Text size="sm">
+                                          {format(new Date(user.createdAt), "DD-MMM-YY")}
+                                        </Text>
+                                      </td>
+                                      {/* <td>
+                                        <Badge 
+                                          className={classes.referralBadge}
+                                          size="lg"
+                                        >
+                                          {formatCurrency(user.commission || 0)}
+                                        </Badge>
+                                      </td> */}
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </Table>
+                            </ScrollArea>
+                          ) : (
+                            <Center py="xl">
+                              <Text color="dimmed">No users found at this level</Text>
+                            </Center>
+                          )}
+                          
+                          {/* Level Summary - ONLY PACKAGE EARNINGS */}
+                          <Card withBorder mt="md" bg="gray.0">
+                            <Group position="apart">
+                              <div>
+                                <Text size="sm" color="dimmed">Total {level === 'level1' ? 'Direct' : level === 'level2' ? 'Level 2' : 'Level 3'} Package Earnings</Text>
+                                <Text size="xl" weight={700}>
+                                  {formatCurrency(referralHistory.users[level]?.commission || 0)}
+                                </Text>
+                              </div>
+                              <div>
+                                <Text size="sm" color="dimmed">Commission Rate</Text>
+                                <Text size="lg" weight={600}>
+                                  {level === 'level1' ? '25%' : level === 'level2' ? '15%' : '10%'}
+                                </Text>
+                              </div>
+                            </Group>
+                          </Card>
+                        </Tabs.Panel>
+                      ))}
+                    </Tabs>
+                  ) : (
+                    <Center py="xl">
+                      <Text color="dimmed">No referral data available</Text>
+                    </Center>
+                  )}
+                </Card>
+
+                {/* Your Referral Code */}
+                <Card withBorder shadow="sm">
+                  <Title order={3} mb="md">Your Referral Code</Title>
+                  <Card withBorder p="lg" bg="blue.0">
+                    <Group position="apart">
+                      <div>
+                        <Text size="sm" color="dimmed">Share this code to earn from package activations</Text>
+                        <Text size="xl" weight={900} style={{ fontFamily: 'monospace' }}>
+                          {user.user_code}
+                        </Text>
+                      </div>
+                      <Stack spacing="xs">
+                        <CopyButton value={user.user_code}>
+                          {({ copied, copy }) => (
+                            <Button
+                              color={copied ? "teal" : "blue"}
+                              onClick={copy}
+                              leftIcon={<IconCopy size={16} />}
+                            >
+                              {copied ? "Copied!" : "Copy Code"}
+                            </Button>
+                          )}
+                        </CopyButton>
+                        <Button
+                          variant="light"
+                          onClick={() => {
+                            const referralLink = `${window.location.origin}/register?ref=${user.user_code}`;
+                            navigator.clipboard.writeText(referralLink);
+                            showNotification({
+                              title: "Success",
+                              message: "Referral link copied to clipboard!",
+                              color: "green",
+                            });
+                          }}
+                          leftIcon={<IconLink size={16} />}
+                        >
+                          Copy Referral Link
+                        </Button>
+                      </Stack>
+                    </Group>
+                  </Card>
+                </Card>
+              </Stack>
+            ) : (
+              <Center py="xl">
+                <Alert color="blue" icon={<IconInfoCircle />}>
+                  <Text>Referral features are only available for Referrer accounts.</Text>
+                </Alert>
+              </Center>
+            )}
+          </Tabs.Panel>
+
+          {/* Earnings Tab - Financials Data */}
           <Tabs.Panel value="earnings" pt="xl">
             {isLoadingEarnings ? (
               <Center py="xl">
@@ -1483,7 +1882,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
               </Center>
             ) : (
               <>
-                {/* 顶部按钮 */}
+                {/* Top buttons */}
                 <Box mb="md" style={{ display: "flex", justifyContent: "end" }}>
                   {user.role !== "Admin" && (
                     <Button
@@ -1497,17 +1896,17 @@ const [showBankDetails, setShowBankDetails] = useState(false);
                   )}
                 </Box>
 
-                {/* 收益概览 */}
+                {/* Financials Overview */}
                 <SimpleGrid cols={4} breakpoints={[
                   { maxWidth: 'lg', cols: 2 },
                   { maxWidth: 'sm', cols: 1 }
                 ]} spacing="lg" mb="xl">
-                  <Card withBorder shadow="sm" bg="green.0">
+                  <Card withBorder shadow="sm" bg="green.0" className={classes.statCard}>
                     <Group position="apart">
                       <div>
                         <Text size="sm" color="dimmed">Total Earnings</Text>
                         <Text style={{ fontSize: 28 }} weight={900}>
-                          PKR {(totalEarnings + withdrawnAmount).toFixed(2)}
+                          {formatCurrency(totalEarnings + withdrawnAmount)}
                         </Text>
                       </div>
                       <IconWallet size={32} color="green" />
@@ -1515,12 +1914,12 @@ const [showBankDetails, setShowBankDetails] = useState(false);
                     <Progress value={100} size="md" color="green" mt="sm" />
                   </Card>
 
-                  <Card withBorder shadow="sm" bg="blue.0">
+                  <Card withBorder shadow="sm" bg="blue.0" className={classes.statCard}>
                     <Group position="apart">
                       <div>
                         <Text size="sm" color="dimmed">Available Balance</Text>
                         <Text style={{ fontSize: 28 }} weight={900}>
-                          PKR {availableBalance.toFixed(2)}
+                          {formatCurrency(availableBalance)}
                         </Text>
                       </div>
                       <IconCash size={32} color="blue" />
@@ -1533,12 +1932,12 @@ const [showBankDetails, setShowBankDetails] = useState(false);
                     />
                   </Card>
 
-                  <Card withBorder shadow="sm" bg="orange.0">
+                  <Card withBorder shadow="sm" bg="orange.0" className={classes.statCard}>
                     <Group position="apart">
                       <div>
                         <Text size="sm" color="dimmed">Pending Requests</Text>
                         <Text style={{ fontSize: 28 }} weight={900}>
-                          PKR {pendingAmount.toFixed(2)}
+                          {formatCurrency(pendingAmount)}
                         </Text>
                       </div>
                       <IconClock size={32} color="orange" />
@@ -1551,12 +1950,12 @@ const [showBankDetails, setShowBankDetails] = useState(false);
                     />
                   </Card>
 
-                  <Card withBorder shadow="sm" bg="red.0">
+                  <Card withBorder shadow="sm" bg="red.0" className={classes.statCard}>
                     <Group position="apart">
                       <div>
                         <Text size="sm" color="dimmed">Withdrawn Amount</Text>
                         <Text style={{ fontSize: 28 }} weight={900}>
-                          PKR {withdrawnAmount.toFixed(2)}
+                          {formatCurrency(withdrawnAmount)}
                         </Text>
                       </div>
                       <IconMoneybag size={32} color="red" />
@@ -1570,16 +1969,49 @@ const [showBankDetails, setShowBankDetails] = useState(false);
                   </Card>
                 </SimpleGrid>
 
-                {/* 提现信息概览 */}
-                {/* <Box mb="xl">
-                  <Text>Wallet: {revenue?.walletAmount?.toFixed(2) ?? "0.00"}</Text>
-                  <Text>Withdraw: {revenue?.withdraw ?? 0}</Text>
-                  <Text>Pending: {pendingAmount.toFixed(2) ?? "0.00" } </Text>
-                  <Text>Rejected: {rejectedAmount.toFixed(2) ?? "0.00"} </Text>
-                  <Text>Net Wallet: {revenue?.walletAmount - pendingAmount} </Text>
-                </Box> */}
+                {/* Detailed Financial Info Box */}
+                <Card withBorder shadow="sm" mb="md">
+                  <Title order={4} mb="md">Financial Details</Title>
+                  <SimpleGrid cols={4} spacing="md">
+                    <div>
+                      <Text size="sm" color="dimmed">Wallet Balance</Text>
+                      <Text size="lg" weight={700}>{formatCurrency(revenue?.walletAmount || 0)}</Text>
+                    </div>
+                    <div>
+                      <Text size="sm" color="dimmed">Total Withdrawn</Text>
+                      <Text size="lg" weight={700}>{formatCurrency(withdrawnAmount)}</Text>
+                    </div>
+                    <div>
+                      <Text size="sm" color="dimmed">Pending Requests</Text>
+                      <Text size="lg" weight={700}>{formatCurrency(pendingAmount)}</Text>
+                    </div>
+                    <div>
+                      <Text size="sm" color="dimmed">Rejected Amount</Text>
+                      <Text size="lg" weight={700}>{formatCurrency(rejectedAmount)}</Text>
+                    </div>
+                  </SimpleGrid>
+                  <Divider my="md" />
+                  <SimpleGrid cols={3} spacing="md">
+                    <div>
+                      <Text size="sm" color="dimmed">Net Available</Text>
+                      <Text size="lg" weight={700} color="green">
+                        {formatCurrency(revenue?.walletAmount - pendingAmount)}
+                      </Text>
+                    </div>
+                    <div>
+                      <Text size="sm" color="dimmed">Min. Balance to Keep</Text>
+                      <Text size="lg" weight={700}>{formatCurrency(walletSettings.minAmount || 10)}</Text>
+                    </div>
+                    <div>
+                      <Text size="sm" color="dimmed">Available for Withdrawal</Text>
+                      <Text size="lg" weight={700} color="blue">
+                        {formatCurrency(Math.max(netWallet, 0))}
+                      </Text>
+                    </div>
+                  </SimpleGrid>
+                </Card>
 
-                {/* 提现请求表格 */}
+                {/* Withdrawal Requests Table */}
                 <Card withBorder shadow="sm">
                   <Tabs
                     defaultValue="All"
@@ -1608,11 +2040,11 @@ const [showBankDetails, setShowBankDetails] = useState(false);
                           <tbody>
                             {filteredWithdrawalRequests.length > 0 ? (
                               filteredWithdrawalRequests.map((request, index) => (
-                                <tr key={request._id}>
+                                <tr key={request._id} className={classes.tableRow}>
                                   <td>{format(new Date(request.createdAt), "DD-MMM-YY")}</td>
                                   <td>{request.account?.[0]?.title || "N/A"}</td>
-                                  <td>PKR {request.amountRequested?.toFixed(2) || "0.00"}</td>
-                                  <td>PKR {request.amountAccepted?.toFixed(2) || "0.00"}</td>
+                                  <td>{formatCurrency(request.amountRequested)}</td>
+                                  <td>{formatCurrency(request.amountAccepted)}</td>
                                   <td>
                                     <Badge color={
                                       request.status === 'Accepted' ? 'green' :
@@ -1661,25 +2093,25 @@ const [showBankDetails, setShowBankDetails] = useState(false);
                   </Tabs>
                 </Card>
 
-                {/* 提现计算信息 */}
+                {/* Withdrawal Information */}
                 <Card withBorder shadow="sm" mt="md" bg="gray.0">
                   <Title order={4} mb="md">Withdrawal Information</Title>
                   <SimpleGrid cols={2} spacing="md">
                     <div>
                       <Text size="sm" color="dimmed">Available for Withdrawal</Text>
-                      <Text size="lg" weight={700}>PKR {netWallet > 0 ? netWallet.toFixed(2) : '0.00'}</Text>
+                      <Text size="lg" weight={700}>{formatCurrency(Math.max(netWallet, 0))}</Text>
                     </div>
                     <div>
                       <Text size="sm" color="dimmed">Minimum Balance to Keep</Text>
-                      <Text size="lg" weight={700}>PKR {(walletSettings.minAmount || 10).toFixed(2)}</Text>
+                      <Text size="lg" weight={700}>{formatCurrency(walletSettings.minAmount || 10)}</Text>
                     </div>
                     <div>
                       <Text size="sm" color="dimmed">Pending Requests</Text>
-                      <Text size="lg" weight={700}>PKR {pendingAmount.toFixed(2)}</Text>
+                      <Text size="lg" weight={700}>{formatCurrency(pendingAmount)}</Text>
                     </div>
                     <div>
                       <Text size="sm" color="dimmed">Rejected Amount</Text>
-                      <Text size="lg" weight={700}>PKR {rejectedAmount.toFixed(2)}</Text>
+                      <Text size="lg" weight={700}>{formatCurrency(rejectedAmount)}</Text>
                     </div>
                   </SimpleGrid>
                   
@@ -1687,7 +2119,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
                     <Alert color="yellow" icon={<IconAlertCircle />} mt="md">
                       <Text size="sm">
                         You cannot withdraw because you need to maintain a minimum balance of {walletSettings.minAmount || 10} PKR.
-                        Available after minimum: PKR {netWallet.toFixed(2)}
+                        Available after minimum: {formatCurrency(netWallet)}
                       </Text>
                     </Alert>
                   )}
@@ -1696,7 +2128,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
             )}
           </Tabs.Panel>
 
-          {/* 历史记录标签页 */}
+          {/* History Tab */}
           <Tabs.Panel value="history" pt="xl">
             <Card withBorder shadow="sm">
               <Group position="apart" mb="md">
@@ -1715,7 +2147,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
                   <tr>
                     <th>Date</th>
                     <th>Type</th>
-                     <th>Package</th> 
+                    <th>Package</th>
                     <th>Amount</th>
                     <th>Status</th>
                     <th>Remarks</th>
@@ -1727,13 +2159,13 @@ const [showBankDetails, setShowBankDetails] = useState(false);
                       {activationRequests?.data?.map((req: any) => {
                         const requestedPkg = packages.find(p => p._id === req.package_id);
                         return (
-                          <tr key={req._id}>
+                          <tr key={req._id} className={classes.tableRow}>
                             <td>{new Date(req.createdAt).toLocaleDateString()}</td>
                             <td>
                               <Badge color="blue">Activation</Badge>
                             </td>
-                            <td>{req?.requested_package.title || 'N/A'}</td> 
-                            <td>PKR {req.amount?.toLocaleString() || '0'}</td>
+                            <td>{requestedPkg?.title || 'N/A'}</td>
+                            <td>{formatCurrency(req.amount)}</td>
                             <td>
                               <Badge color={
                                 req.status === 'approved' ? 'green' :
@@ -1749,13 +2181,13 @@ const [showBankDetails, setShowBankDetails] = useState(false);
                       {userRequests?.data?.map((req: any) => {
                         const requestedPkg = packages.find(p => p._id === req.requested_package);
                         return (
-                          <tr key={req._id}>
+                          <tr key={req._id} className={classes.tableRow}>
                             <td>{new Date(req.createdAt).toLocaleDateString()}</td>
                             <td>
                               <Badge color="green">Upgrade</Badge>
                             </td>
-                            <td>{req.requested_package.title}</td>
-                            <td>PKR {req.amount?.toLocaleString() || '0'}</td>
+                            <td>{requestedPkg?.title}</td>
+                            <td>{formatCurrency(req.amount)}</td>
                             <td>
                               <Badge color={
                                 req.status === 'approved' ? 'green' :
@@ -1783,277 +2215,271 @@ const [showBankDetails, setShowBankDetails] = useState(false);
         </Tabs>
       </Paper>
 
-      {/* 当前套餐激活模态框 */}
-     <Modal
-  opened={currentPackageActivationModal}
-  onClose={() => {
-    if (activateCurrentPackageMutation.isLoading) return;
-    setCurrentPackageActivationModal(false);
-    currentPackageActivationForm.reset();
-    setPaymentFile(null);
-    setPaymentPreview(null);
-    setActiveStep(0);
-  }}
-  title={`Activate ${currentPackage?.title} Package`}
-  size="lg"
-  overlayBlur={3}
-  closeOnClickOutside={!activateCurrentPackageMutation.isLoading}
-  closeOnEscape={!activateCurrentPackageMutation.isLoading}
->
-  <Stepper active={activeStep} onStepClick={setActiveStep} breakpoint="sm">
-    <Stepper.Step label="Step 1" description="Package Details">
-      <Card withBorder mb="md">
-        <Title order={4}>Package Information</Title>
-        <SimpleGrid cols={2} mt="md">
-          <div>
-            <Text size="sm" color="dimmed">Package Name</Text>
-            <Text weight={600}>{currentPackage?.title}</Text>
-          </div>
-          <div>
-            <Text size="sm" color="dimmed">Price</Text>
-            <Text weight={600} color="blue">PKR {currentPackage?.price?.toLocaleString()}</Text>
-          </div>
-          <div>
-            <Text size="sm" color="dimmed">Commission Rate</Text>
-            <Text weight={600}>{currentPackage?.commission}%</Text>
-          </div>
-          <div>
-            <Text size="sm" color="dimmed">Discount Percentage</Text>
-            <Text weight={600}>{currentPackage?.discount_percentage?.toLocaleString() || "1,000"} %</Text>
-          </div>
-        </SimpleGrid>
-      </Card>
-
-      {/* بینک کی تفصیلات دکھانے کے لیے Button */}
-      <Card withBorder mb="md" bg="blue.0">
-        <Group position="apart" align="center">
-          <div>
-            <Text size="sm" weight={600} mb={4}>View company bank account information</Text>
-          
-          </div>
-          <Button
-            variant="light"
-            color="blue"
-            size="sm"
-           
-            onClick={() => setPaymentModalOpened(true)}
-          >
-            View Bank Details
-          </Button>
-        </Group>
-      </Card>
-      
-      <Button 
-        onClick={() => setActiveStep(1)} 
-        fullWidth
-        leftIcon={<IconArrowRight size={16} />}
+      {/* Current Package Activation Modal */}
+      <Modal
+        opened={currentPackageActivationModal}
+        onClose={() => {
+          if (activateCurrentPackageMutation.isLoading) return;
+          setCurrentPackageActivationModal(false);
+          currentPackageActivationForm.reset();
+          setPaymentFile(null);
+          setPaymentPreview(null);
+          setActiveStep(0);
+        }}
+        title={`Activate ${currentPackage?.title} Package`}
+        size="lg"
+        overlayBlur={3}
+        closeOnClickOutside={!activateCurrentPackageMutation.isLoading}
+        closeOnEscape={!activateCurrentPackageMutation.isLoading}
       >
-        Continue to Payment
-      </Button>
-    </Stepper.Step>
+        <Stepper active={activeStep} onStepClick={setActiveStep} breakpoint="sm">
+          <Stepper.Step label="Step 1" description="Package Details">
+            <Card withBorder mb="md">
+              <Title order={4}>Package Information</Title>
+              <SimpleGrid cols={2} mt="md">
+                <div>
+                  <Text size="sm" color="dimmed">Package Name</Text>
+                  <Text weight={600}>{currentPackage?.title}</Text>
+                </div>
+                <div>
+                  <Text size="sm" color="dimmed">Price</Text>
+                  <Text weight={600} color="blue">{formatCurrency(currentPackage?.price)}</Text>
+                </div>
+                <div>
+                  <Text size="sm" color="dimmed">Commission Rate</Text>
+                  <Text weight={600}>{currentPackage?.commission}%</Text>
+                </div>
+                <div>
+                  <Text size="sm" color="dimmed">Discount Percentage</Text>
+                  <Text weight={600}>{currentPackage?.discount_percentage?.toLocaleString() || "1,000"} %</Text>
+                </div>
+              </SimpleGrid>
+            </Card>
 
-    <Stepper.Step label="Step 2" description="Payment Information">
-      <form onSubmit={currentPackageActivationForm.onSubmit((values) => {
-        if (hasPendingActivationRequest) {
-          showNotification({
-            title: "Request Pending",
-            message: "You already have a pending activation request",
-            color: "yellow",
-          });
-          return;
-        }
-        
-        if (!paymentFile) {
-          showNotification({
-            title: "Error",
-            message: "Please upload payment screenshot",
-            color: "red",
-          });
-          return;
-        }
-        activateCurrentPackageMutation.mutate(values);
-      })}>
-        <Stack spacing="md">
-          {/* بینک کی تفصیلات Reminder */}
-          <Card withBorder bg="yellow.0" mb="md">
-            <Group position="apart" align="flex-start">
-              <div>
-                <Group spacing="xs" mb={4}>
-                  
-                  <Text size="sm" weight={600}>Payment Instructions</Text>
-                </Group>
-                <Text size="xs" color="dimmed">
-                  Transfer <strong>PKR {currentPackage?.price?.toLocaleString()}</strong> to company bank account
-                </Text>
+            {/* Bank Details Button */}
+            <Card withBorder mb="md" bg="blue.0">
+              <Group position="apart" align="center">
+                <div>
+                  <Text size="sm" weight={600} mb={4}>View company bank account information</Text>
+                </div>
                 <Button
-                  variant="subtle"
-                  size="xs"
-                  compact
+                  variant="light"
                   color="blue"
+                  size="sm"
                   onClick={() => setPaymentModalOpened(true)}
-                  
-                  mt={4}
                 >
-                  View Bank Account Details
+                  View Bank Details
                 </Button>
-              </div>
-              <Badge color="blue" variant="filled">Required</Badge>
-            </Group>
-          </Card>
+              </Group>
+            </Card>
+            
+            <Button 
+              onClick={() => setActiveStep(1)} 
+              fullWidth
+              leftIcon={<IconArrowRight size={16} />}
+            >
+              Continue to Payment
+            </Button>
+          </Stepper.Step>
 
-          <Card withBorder bg="blue.0" mb="md">
-            <Text size="sm" color="dimmed">Activation Amount</Text>
-            <Text style={{ fontSize: 28 }} weight={900} color="blue">
-              PKR {currentPackage?.price?.toLocaleString()}
-            </Text>
-          </Card>
-
-          <TextInput
-            label="Transaction ID"
-            placeholder="Enter your payment transaction ID"
-            required
-            description="Transaction ID from your bank transfer"
-            icon={<IconReceipt size={16} />}
-            {...currentPackageActivationForm.getInputProps("transaction_id")}
-            disabled={activateCurrentPackageMutation.isLoading}
-          />
-
-          <div>
-            <Text size="sm" weight={500} mb="xs">Payment Proof (Screenshot)</Text>
-            {paymentPreview ? (
-              <Card withBorder p="md">
-                <Group position="apart">
-                  <Group>
-                    <Image
-                      src={paymentPreview}
-                      alt="Payment proof"
-                      width={80}
-                      height={80}
-                      radius="sm"
-                      withPlaceholder
-                    />
-                    <Text size="sm" color="dimmed">Screenshot uploaded</Text>
+          <Stepper.Step label="Step 2" description="Payment Information">
+            <form onSubmit={currentPackageActivationForm.onSubmit((values) => {
+              if (hasPendingActivationRequest) {
+                showNotification({
+                  title: "Request Pending",
+                  message: "You already have a pending activation request",
+                  color: "yellow",
+                });
+                return;
+              }
+              
+              if (!paymentFile) {
+                showNotification({
+                  title: "Error",
+                  message: "Please upload payment screenshot",
+                  color: "red",
+                });
+                return;
+              }
+              activateCurrentPackageMutation.mutate(values);
+            })}>
+              <Stack spacing="md">
+                {/* Bank Details Reminder */}
+                <Card withBorder bg="yellow.0" mb="md">
+                  <Group position="apart" align="flex-start">
+                    <div>
+                      <Group spacing="xs" mb={4}>
+                        <Text size="sm" weight={600}>Payment Instructions</Text>
+                      </Group>
+                      <Text size="xs" color="dimmed">
+                        Transfer <strong>{formatCurrency(currentPackage?.price)}</strong> to company bank account
+                      </Text>
+                      <Button
+                        variant="subtle"
+                        size="xs"
+                        compact
+                        color="blue"
+                        onClick={() => setPaymentModalOpened(true)}
+                        mt={4}
+                      >
+                        View Bank Account Details
+                      </Button>
+                    </div>
+                    <Badge color="blue" variant="filled">Required</Badge>
                   </Group>
+                </Card>
+
+                <Card withBorder bg="blue.0" mb="md">
+                  <Text size="sm" color="dimmed">Activation Amount</Text>
+                  <Text style={{ fontSize: 28 }} weight={900} color="blue">
+                    {formatCurrency(currentPackage?.price)}
+                  </Text>
+                </Card>
+
+                <TextInput
+                  label="Transaction ID"
+                  placeholder="Enter your payment transaction ID"
+                  required
+                  description="Transaction ID from your bank transfer"
+                  icon={<IconReceipt size={16} />}
+                  {...currentPackageActivationForm.getInputProps("transaction_id")}
+                  disabled={activateCurrentPackageMutation.isLoading}
+                />
+
+                <div>
+                  <Text size="sm" weight={500} mb="xs">Payment Proof (Screenshot)</Text>
+                  {paymentPreview ? (
+                    <Card withBorder p="md">
+                      <Group position="apart">
+                        <Group>
+                          <Image
+                            src={paymentPreview}
+                            alt="Payment proof"
+                            width={80}
+                            height={80}
+                            radius="sm"
+                            withPlaceholder
+                          />
+                          <Text size="sm" color="dimmed">Screenshot uploaded</Text>
+                        </Group>
+                        <Button
+                          size="xs"
+                          color="red"
+                          variant="light"
+                          onClick={() => setPaymentFile(null)}
+                          leftIcon={<IconX size={14} />}
+                          disabled={activateCurrentPackageMutation.isLoading}
+                        >
+                          Remove
+                        </Button>
+                      </Group>
+                    </Card>
+                  ) : (
+                    <FileButton
+                      onChange={setPaymentFile}
+                      accept="image/png,image/jpeg,image/webp"
+                      disabled={activateCurrentPackageMutation.isLoading}
+                    >
+                      {(props) => (
+                        <Button 
+                          {...props} 
+                          variant="light" 
+                          leftIcon={<IconUpload size={16} />}
+                          fullWidth
+                          disabled={activateCurrentPackageMutation.isLoading}
+                        >
+                          Upload Payment Screenshot
+                        </Button>
+                      )}
+                    </FileButton>
+                  )}
+                </div>
+
+                <Group grow>
                   <Button
-                    size="xs"
-                    color="red"
-                    variant="light"
-                    onClick={() => setPaymentFile(null)}
-                    leftIcon={<IconX size={14} />}
+                    variant="default"
+                    onClick={() => setActiveStep(0)}
                     disabled={activateCurrentPackageMutation.isLoading}
                   >
-                    Remove
+                    Back
+                  </Button>
+                  <Button
+                    type="submit"
+                    loading={activateCurrentPackageMutation.isLoading}
+                    disabled={!paymentFile || hasPendingActivationRequest}
+                    color="green"
+                    leftIcon={<IconCheck size={16} />}
+                  >
+                    Submit Activation
                   </Button>
                 </Group>
-              </Card>
-            ) : (
-              <FileButton
-                onChange={setPaymentFile}
-                accept="image/png,image/jpeg,image/webp"
-                disabled={activateCurrentPackageMutation.isLoading}
-              >
-                {(props) => (
-                  <Button 
-                    {...props} 
-                    variant="light" 
-                    leftIcon={<IconUpload size={16} />}
-                    fullWidth
-                    disabled={activateCurrentPackageMutation.isLoading}
-                  >
-                    Upload Payment Screenshot
-                  </Button>
-                )}
-              </FileButton>
-            )}
-          </div>
+              </Stack>
+            </form>
+          </Stepper.Step>
 
-          <Group grow>
-            <Button
-              variant="default"
-              onClick={() => setActiveStep(0)}
-              disabled={activateCurrentPackageMutation.isLoading}
-              
-            >
-              Back
-            </Button>
-            <Button
-              type="submit"
-              loading={activateCurrentPackageMutation.isLoading}
-              disabled={!paymentFile || hasPendingActivationRequest}
-              color="green"
-              leftIcon={<IconCheck size={16} />}
-            >
-              Submit Activation
-            </Button>
-          </Group>
-        </Stack>
-      </form>
-    </Stepper.Step>
-
-    <Stepper.Completed>
-      <Card withBorder>
-        <Group position="center" mb="md">
-          <Avatar color="green" radius="xl" size={60}>
-            <IconCheck size={30} />
-          </Avatar>
-        </Group>
-        <Title order={4} align="center" mb="md">Activation Request Submitted!</Title>
-        <Text align="center" color="dimmed" mb="md">
-          Your activation request has been submitted successfully. 
-          The admin will review your payment and activate your package.
-        </Text>
-        
-        <Card withBorder p="md" mb="md" bg="gray.0">
-          <SimpleGrid cols={2} spacing="xs">
-            <div>
-              <Text size="xs" color="dimmed">Package</Text>
-              <Text weight={600}>{currentPackage?.title}</Text>
-            </div>
-            <div>
-              <Text size="xs" color="dimmed">Amount</Text>
-              <Text weight={600} color="blue">PKR {currentPackage?.price?.toLocaleString()}</Text>
-            </div>
-            <div>
-              <Text size="xs" color="dimmed">Transaction ID</Text>
-              <Text weight={600} style={{ fontFamily: 'monospace' }}>
-                {currentPackageActivationForm.values.transaction_id}
+          <Stepper.Completed>
+            <Card withBorder>
+              <Group position="center" mb="md">
+                <Avatar color="green" radius="xl" size={60}>
+                  <IconCheck size={30} />
+                </Avatar>
+              </Group>
+              <Title order={4} align="center" mb="md">Activation Request Submitted!</Title>
+              <Text align="center" color="dimmed" mb="md">
+                Your activation request has been submitted successfully. 
+                The admin will review your payment and activate your package.
               </Text>
-            </div>
-            <div>
-              <Text size="xs" color="dimmed">Status</Text>
-              <Badge color="yellow" variant="filled">Pending Review</Badge>
-            </div>
-          </SimpleGrid>
-        </Card>
+              
+              <Card withBorder p="md" mb="md" bg="gray.0">
+                <SimpleGrid cols={2} spacing="xs">
+                  <div>
+                    <Text size="xs" color="dimmed">Package</Text>
+                    <Text weight={600}>{currentPackage?.title}</Text>
+                  </div>
+                  <div>
+                    <Text size="xs" color="dimmed">Amount</Text>
+                    <Text weight={600} color="blue">{formatCurrency(currentPackage?.price)}</Text>
+                  </div>
+                  <div>
+                    <Text size="xs" color="dimmed">Transaction ID</Text>
+                    <Text weight={600} style={{ fontFamily: 'monospace' }}>
+                      {currentPackageActivationForm.values.transaction_id}
+                    </Text>
+                  </div>
+                  <div>
+                    <Text size="xs" color="dimmed">Status</Text>
+                    <Badge color="yellow" variant="filled">Pending Review</Badge>
+                  </div>
+                </SimpleGrid>
+              </Card>
 
-        <Alert icon={<IconInfoCircle size={16} />} color="blue" mb="md">
-          <Text size="sm">
-            <strong>Note:</strong> You can view your payment status in your profile section.
-            Processing time is 24-48 hours.
-          </Text>
-        </Alert>
+              <Alert icon={<IconInfoCircle size={16} />} color="blue" mb="md">
+                <Text size="sm">
+                  <strong>Note:</strong> You can view your payment status in your profile section.
+                  Processing time is 24-48 hours.
+                </Text>
+              </Alert>
 
-        <Button 
-          fullWidth 
-          mt="md"
-          onClick={() => {
-            setCurrentPackageActivationModal(false);
-            setActiveStep(0);
-            currentPackageActivationForm.reset();
-            setPaymentFile(null);
-            setPaymentPreview(null);
-          }}
-          variant="light"
-        >
-          Close
-        </Button>
-      </Card>
-    </Stepper.Completed>
-  </Stepper>
-</Modal>
+              <Button 
+                fullWidth 
+                mt="md"
+                onClick={() => {
+                  setCurrentPackageActivationModal(false);
+                  setActiveStep(0);
+                  currentPackageActivationForm.reset();
+                  setPaymentFile(null);
+                  setPaymentPreview(null);
+                }}
+                variant="light"
+              >
+                Close
+              </Button>
+            </Card>
+          </Stepper.Completed>
+        </Stepper>
+      </Modal>
 
-
-      {/* 提现请求模态框 */}
+      {/* Withdrawal Request Modal */}
       <Modal
         opened={withdrawalModalOpened}
         onClose={() => {
@@ -2067,30 +2493,29 @@ const [showBankDetails, setShowBankDetails] = useState(false);
           <Stack spacing="md">
             <Alert color="blue" icon={<IconInfoCircle size={16} />}>
               <Text size="sm">
-                Minimum amount to keep in wallet: PKR {walletSettings.minAmount || 10}
+                Minimum amount to keep in wallet: {formatCurrency(walletSettings.minAmount || 10)}
                 <br />
-                Available for withdrawal: PKR {netWallet > 0 ? netWallet.toFixed(2) : '0.00'}
+                Available for withdrawal: {formatCurrency(Math.max(netWallet, 0))}
               </Text>
             </Alert>
 
-           <NumberInput
-  label="Withdrawal Amount"
-  value={withdrawalForm.values.amount}
-  onChange={(value) => {
-    const numValue = Number(value) || 0;
-    withdrawalForm.setFieldValue('amount', numValue);
-  }}
-  min={0.01}
-  required
-  disabled={!canWithdraw}
-  parser={(value) => value?.replace(/\$\s?|(,*)/g, '')}
- 
-  error={
-    withdrawalForm.values.amount > netWallet 
-      ? `Maximum amount is PKR ${netWallet.toFixed(2)}`
-      : withdrawalForm.errors.amount
-  }
-/>
+            <NumberInput
+              label="Withdrawal Amount"
+              value={withdrawalForm.values.amount}
+              onChange={(value) => {
+                const numValue = Number(value) || 0;
+                withdrawalForm.setFieldValue('amount', numValue);
+              }}
+              min={0.01}
+              required
+              disabled={!canWithdraw}
+              parser={(value) => value?.replace(/\$\s?|(,*)/g, '')}
+              error={
+                withdrawalForm.values.amount > netWallet 
+                  ? `Maximum amount is ${formatCurrency(netWallet)}`
+                  : withdrawalForm.errors.amount
+              }
+            />
 
             <Select
               label="Select Bank Account"
@@ -2116,16 +2541,13 @@ const [showBankDetails, setShowBankDetails] = useState(false);
               color="green"
               fullWidth
             >
-
-
-              
               Submit Withdrawal Request
             </Button>
 
             {!canWithdraw && (
               <Alert color="red" icon={<IconAlertCircle size={16} />}>
                 <Text size="sm">
-                  Cannot withdraw. You need to maintain a minimum balance of {walletSettings.minAmount || 10} PKR.
+                  Cannot withdraw. You need to maintain a minimum balance of {formatCurrency(walletSettings.minAmount || 10)}.
                 </Text>
               </Alert>
             )}
@@ -2133,7 +2555,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
         </form>
       </Modal>
 
-      {/* 批准提现请求模态框 */}
+      {/* Approve Withdrawal Request Modal */}
       <Modal
         opened={acceptModal}
         onClose={() => setAcceptModal(false)}
@@ -2142,7 +2564,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
         title="Payment Request"
       >
         <Box component="div">
-          <Text>Request Amount: {acceptRequest.amountRequested}</Text>
+          <Text>Request Amount: {formatCurrency(acceptRequest.amountRequested)}</Text>
         </Box>
         <Box component="div">
           <NumberInput
@@ -2166,7 +2588,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
         </Box>
       </Modal>
 
-      {/* 银行详情模态框 */}
+      {/* Bank Details Modal */}
       <Modal
         opened={paymentModalOpened}
         onClose={() => setPaymentModalOpened(false)}
@@ -2230,7 +2652,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
         )}
       </Modal>
 
-      {/* 历史时间线模态框 */}
+      {/* History Timeline Modal */}
       <Modal
         opened={historyModalOpened}
         onClose={() => setHistoryModalOpened(false)}
@@ -2294,7 +2716,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
                   <Group spacing="lg">
                     <Text size="sm">
                       <Text span color="dimmed">Amount: </Text>
-                      PKR {req.amount?.toLocaleString() || "0"}
+                      {formatCurrency(req.amount)}
                     </Text>
                     <Text size="sm">
                       <Text span color="dimmed">Transaction: </Text>
