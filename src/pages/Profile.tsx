@@ -909,7 +909,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
                         radius="xl"
                         color="blue"
                       />
-                      <div>
+                      {/* <div>
                         <FileButton
                           onChange={setProfileFile}
                           accept="image/png,image/jpeg,image/webp"
@@ -936,7 +936,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
                             Remove
                           </Button>
                         )}
-                      </div>
+                      </div> */}
                     </Group>
 
                     <TextInput
@@ -944,6 +944,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
                       placeholder="Enter first name"
                       {...profileForm.getInputProps("firstname")}
                       required
+                       disabled
                     />
                     
                     <TextInput
@@ -951,6 +952,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
                       placeholder="Enter last name"
                       {...profileForm.getInputProps("lastname")}
                       required
+                       disabled
                     />
 
                     {/* <TextInput
@@ -1257,19 +1259,25 @@ const [showBankDetails, setShowBankDetails] = useState(false);
                           <Stack spacing="xs">
                             <Group spacing="xs">
                               <IconCheck size={16} color="green" />
-                              <Text>Commission rate: {currentPackage.commission_rate}%</Text>
+                              <Text>Commission rate: {currentPackage.commission}%</Text>
                             </Group>
                             <Group spacing="xs">
                               <IconCheck size={16} color="green" />
-                              <Text>Direct referral bonuses</Text>
+                               <Text>Discount rate: {currentPackage.discount_percentage}%</Text>
                             </Group>
                             <Group spacing="xs">
                               <IconCheck size={16} color="green" />
-                              <Text>Weekly payout system</Text>
+                              <Text>Direct Referral Profit 25%</Text>
                             </Group>
                             <Group spacing="xs">
                               <IconCheck size={16} color="green" />
-                              <Text>Priority support</Text>
+                              <Text>2nd Line Profit 15%</Text>
+                              
+                            </Group>
+                            <Group spacing="xs">
+                             <IconCheck size={16} color="green" />
+                              <Text>3rd Line Profit 10%</Text>
+                              
                             </Group>
                           </Stack>
                         </>
@@ -1707,7 +1715,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
                   <tr>
                     <th>Date</th>
                     <th>Type</th>
-                    <th>Package</th>
+                     <th>Package</th> 
                     <th>Amount</th>
                     <th>Status</th>
                     <th>Remarks</th>
@@ -1724,7 +1732,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
                             <td>
                               <Badge color="blue">Activation</Badge>
                             </td>
-                            <td>{requestedPkg?.title || 'N/A'}</td>
+                            <td>{req?.requested_package.title || 'N/A'}</td> 
                             <td>PKR {req.amount?.toLocaleString() || '0'}</td>
                             <td>
                               <Badge color={
@@ -1746,7 +1754,7 @@ const [showBankDetails, setShowBankDetails] = useState(false);
                             <td>
                               <Badge color="green">Upgrade</Badge>
                             </td>
-                            <td>{requestedPkg?.title || 'N/A'}</td>
+                            <td>{req.requested_package.title}</td>
                             <td>PKR {req.amount?.toLocaleString() || '0'}</td>
                             <td>
                               <Badge color={
