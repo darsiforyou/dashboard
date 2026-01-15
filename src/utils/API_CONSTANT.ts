@@ -20,4 +20,6 @@ export const Mlm = "/milestone";
 export const FORGOT_PASSWORD_URL="/auth/forgot-password" 
 export const VERIFY_OTP_URL="/auth/verify-otp"
 export const RESET_PASSWORD_URL="/auth/reset-password"
+// In your API_CONSTANT.js file, add:
+export const PRODUCTS_EXPORT_EXCEL = "/products/export/excel";
 
