@@ -105,14 +105,14 @@ const schema = z
       }
       if (
         val.iban === undefined ||
-        val.iban.length < 15 ||
-        val.iban.length > 25
+        val.iban.length < 24 ||
+        val.iban.length > 24
       ) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["iban"],
           message:
-            "IBAN number should be minimum to 16 characters and maximum 24 characters",
+            "IBAN number should be 24 characters",
         });
       }
     } else {
@@ -529,13 +529,49 @@ export function Accounts({}: Props) {
             />
           )}
 
+           {form.values.type === "Bank"  && (
+
           <TextInput
             type="number"
             label="Account Number"
             placeholder="Enter your account name"
             withAsterisk={form.values.type !== "Bank"}
             {...form.getInputProps("account_number")}
+
           />
+
+           )}
+
+
+
+
+          {form.values.type !== "Bank"  && (
+
+<TextInput
+  label="Account Number"
+  placeholder="03XXXXXXXXX"
+  withAsterisk={form.values.type !== "Bank"}
+  type="tel"
+  inputMode="numeric"
+  maxLength={11}
+  minLength={11}
+  {...form.getInputProps("account_number")}
+  onChange={(e) => {
+    const value = e.target.value.replace(/\D/g, ""); // numbers only
+    if (value.length <= 11) {
+      form.setFieldValue("account_number", value);
+    }
+  }}
+/>
+
+          )}
+
+
+
+
+
+
+
           {form.values.type == "Bank" && (
             <TextInput
               label="IBAN"
@@ -565,6 +601,7 @@ export function Accounts({}: Props) {
         overlayOpacity={0.55}
         overlayBlur={3}
       >
+
         {/* Drawer content */}
         <form onSubmit={handleFilterForm}>
           {/* <Select
