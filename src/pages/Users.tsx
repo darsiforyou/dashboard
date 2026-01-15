@@ -24,7 +24,7 @@ import { useQuery } from "react-query";
 import { DataTable } from "mantine-datatable";
 import { Pencil, Edit } from "tabler-icons-react";
 import { showNotification } from "@mantine/notifications";
-import { IconCheck } from "@tabler/icons";
+import { IconCheck, IconX } from "@tabler/icons";
 import { User } from "../Types/types";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { useLocation, useSearchParams } from "react-router-dom";
@@ -168,9 +168,11 @@ export function Users({}: Props) {
      
     }
 
-    try {
-      let res;
+     let res;
       let message = "";
+
+    try {
+     
 
       if (values._id) {
         res = await axiosConfig.put(`${USERS}/${values._id}`, values);
@@ -186,13 +188,47 @@ export function Users({}: Props) {
         form.reset();
         refetch();
       }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
+      else if(res.status === 201){
+
+         showNotification({ title: message, message: res.data.message, icon: <IconCheck />, color: "teal" });
+        setIsAddModalOpened(false);
+        form.reset();
+        refetch();
+
+
+
+      }
+
+
+   } catch (err: any) {
+    console.error(err); // debugging ke liye
+    showNotification({
+        title: "Error",
+        message: err.response?.data?.message || err.response?.data?.success || "Something went wrong",
+        icon: <IconX />, // red cross icon
+        color: "red",
+    });
+} finally {
+    setSubmitting(false);
+}
+
+
+
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+  
   // Delete user
   const handleDelete = async (id: string) => {
     try {
@@ -311,7 +347,15 @@ export function Users({}: Props) {
           </SimpleGrid>
 
           <SimpleGrid cols={2} mt="xs">
-            <TextInput label="Email" required {...form.getInputProps("email")} disabled={!!form.values._id && form.values.role === "Admin"} />
+           <TextInput
+  label="Email"
+  required
+  pattern=".+@gmail\.com"
+  title="Email must be a valid @gmail.com address"
+  {...form.getInputProps("email")}
+  disabled={!!form.values._id && form.values.role === "Admin"}
+/>
+
             {!form.values._id && <TextInput label="Password" type="password" required {...form.getInputProps("password")} />}
           </SimpleGrid>
 
