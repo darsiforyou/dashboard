@@ -39,6 +39,104 @@ function ProductModal({
 }: any) {
   const [submitting, setSubmitting] = useState(false);
   const [isOtherBrand, setIsOtherBrand] = useState(false);
+  const [lastEditedField, setLastEditedField] = useState<string | null>(null);
+
+
+  const [priceFieldChanges, setPriceFieldChanges] = useState({
+  price: false,
+  vendorPrice: false,
+  discountPrice: false
+});
+
+  // 当 price 或 vendorPrice 变化时，自动计算 discount
+  useEffect(() => {
+    const price = parseFloat(form.values.price);
+    const vendorPrice = parseFloat(form.values.vendorPrice);
+    
+    // 只有当最后编辑的不是 discountPrice 时才计算折扣
+    if (lastEditedField !== 'discountPrice' && price && vendorPrice && vendorPrice > 0) {
+      const discount = ((vendorPrice - price) / vendorPrice) * 100;
+      form.setFieldValue('discountPrice', discount.toFixed(2));
+    }
+  }, [form.values.price, form.values.vendorPrice]);
+
+  // 当 discount 变化时，自动计算 selling price
+  useEffect(() => {
+    const vendorPrice = parseFloat(form.values.vendorPrice);
+    const discount = parseFloat(form.values.discountPrice);
+    
+    // 只有当最后编辑的是 discountPrice 时才计算价格
+    if (lastEditedField === 'discountPrice' && vendorPrice && discount) {
+      const calculatedPrice = vendorPrice - (vendorPrice * discount / 100);
+      form.setFieldValue('price', calculatedPrice.toFixed(2));
+    }
+  }, [form.values.discountPrice]);
+
+  // 处理字段变化的函数
+const handlePriceFieldChange = (field: string, value: any) => {
+  // موجودہ ویلیوز کو کاپی کریں
+  const currentValues = { ...form.values };
+  
+  // جو فیلڈ تبدیل ہو رہی ہے اسے اپڈیٹ کریں
+  currentValues[field] = value;
+  
+  // Parse کریں
+  const price = field === 'price' ? (parseFloat(value) || 0) : (parseFloat(currentValues.price) || 0);
+  const vendorPrice = field === 'vendorPrice' ? (parseFloat(value) || 0) : (parseFloat(currentValues.vendorPrice) || 0);
+  const discountPrice = field === 'discountPrice' ? (parseFloat(value) || 0) : (parseFloat(currentValues.discountPrice) || 0);
+  
+  let newPrice = price;
+  let newVendorPrice = vendorPrice;
+  let newDiscountPrice = discountPrice;
+  
+  if (field === 'price') {
+    const newPriceValue = parseFloat(value) || 0;
+    newPrice = newPriceValue;
+    
+    // اگر price اور discount موجود ہوں تو cost price کیلکولیٹ کریں
+    if (newPriceValue > 0 && discountPrice > 0) {
+      newVendorPrice = newPriceValue * (100 - discountPrice) / 100;
+    }
+    // اگر price اور cost price موجود ہوں تو discount کیلکولیٹ کریں
+    else if (newPriceValue > 0 && vendorPrice > 0) {
+      newDiscountPrice = 100 - (vendorPrice * 100 / newPriceValue);
+    }
+  }
+  else if (field === 'vendorPrice') {
+    const newVendorPriceValue = parseFloat(value) || 0;
+    newVendorPrice = newVendorPriceValue;
+    
+    // اگر cost price اور price موجود ہوں تو discount کیلکولیٹ کریں
+    if (newVendorPriceValue > 0 && price > 0) {
+      newDiscountPrice = 100 - (newVendorPriceValue * 100 / price);
+    }
+    // اگر cost price اور discount موجود ہوں تو price کیلکولیٹ کریں
+    else if (newVendorPriceValue > 0 && discountPrice > 0) {
+      newPrice = newVendorPriceValue * 100 / (100 - discountPrice);
+    }
+  }
+  else if (field === 'discountPrice') {
+    const newDiscountPriceValue = parseFloat(value) || 0;
+    newDiscountPrice = newDiscountPriceValue;
+    
+    // اگر discount اور price موجود ہوں تو cost price کیلکولیٹ کریں
+    if (newDiscountPriceValue >= 0 && price > 0) {
+      newVendorPrice = price * (100 - newDiscountPriceValue) / 100;
+    }
+    // اگر discount اور cost price موجود ہوں تو price کیلکولیٹ کریں
+    else if (newDiscountPriceValue >= 0 && vendorPrice > 0) {
+      newPrice = vendorPrice * 100 / (100 - newDiscountPriceValue);
+    }
+  }
+  
+  // اب تمام تینوں فیلڈز ایک ساتھ اپڈیٹ کریں
+  form.setValues({
+    ...form.values,
+    price: newPrice,
+    vendorPrice: newVendorPrice,
+    discountPrice: newDiscountPrice
+  });
+};
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     const { otherBrandName, ...values }: any = form.values;
@@ -92,14 +190,45 @@ function ProductModal({
       }
     }
 
-    if (values.vendorPrice > values.price) {
+    // 验证价格逻辑
+    const price = parseFloat(values.price);
+    const vendorPrice = parseFloat(values.vendorPrice);
+    const discountPrice = parseFloat(values.discountPrice);
+
+    if (vendorPrice > price) {
       return showNotification({
         autoClose: 5000,
-        // title: "",
-        message: "Vendor price should be higher than selling price   ",
+        message: "Cost price should not be higher than selling price",
         color: "red",
       });
     }
+
+    if (price <= 0 || vendorPrice <= 0) {
+      return showNotification({
+        autoClose: 5000,
+        message: "Prices should be greater than 0",
+        color: "red",
+      });
+    }
+
+    // if (discountPrice < 0 || discountPrice > 100) {
+    //   return showNotification({
+    //     autoClose: 5000,
+    //     message: "Discount percentage should be between 0 and 100",
+    //     color: "red",
+    //   });
+    // }
+
+    // 验证计算出的折扣是否与实际折扣一致
+    const calculatedDiscount = ((vendorPrice - price) / vendorPrice) * 100;
+    if (Math.abs(calculatedDiscount - discountPrice) > 0.01) {
+      return showNotification({
+        autoClose: 5000,
+        message: "Discount percentage does not match with selling and cost prices",
+        color: "red",
+      });
+    }
+
     setSubmitting(true);
 
     // add other brands in the database
@@ -178,6 +307,7 @@ function ProductModal({
         color: "teal",
       });
       form.reset();
+      setLastEditedField(null);
     }
     if (res.data.error) {
       showNotification({
@@ -269,18 +399,59 @@ function ProductModal({
               </SimpleGrid>
             )}
             <SimpleGrid mt={"xs"} cols={3}>
+
+
+             <NumberInput
+                label="Selling Price"
+                placeholder="120"
+                required
+                precision={2}
+                min={0}
+                value={form.values.price}
+                onChange={(value) => handlePriceFieldChange('price',value)}
+              />
+
               <NumberInput
+                label="Discount Percentage"
+                placeholder="0-100"
+                required
+                precision={2}
+                min={0}
+                max={100}
+                value={form.values.discountPrice}
+                onChange={(value) => handlePriceFieldChange('discountPrice', value)}
+              />
+
+              <NumberInput
+                label="Cost Price"
+                placeholder="100"
+                required
+                precision={2}
+                min={0}
+                value={form.values.vendorPrice}
+                onChange={(value) => handlePriceFieldChange('vendorPrice', value)}
+              />
+
+
+
+
+
+
+
+              {/* <NumberInput
                 label="Vendor Price"
                 {...form.getInputProps("vendorPrice")}
                 placeholder="100"
                 required
-              />
-              <NumberInput
-                label="Selling Price"
-                placeholder="120"
-                required
-                {...form.getInputProps("price")}
-              />
+              /> */}
+
+               
+
+ 
+
+
+
+              
               <NumberInput
                 label="In Stock"
                 placeholder="120"
